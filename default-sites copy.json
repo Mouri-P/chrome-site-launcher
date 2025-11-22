@@ -1,0 +1,45 @@
+[
+    {
+        "id": "default-1",
+        "name": "Google",
+        "url": "https://www.google.com"
+    },
+    {
+        "id": "default-2",
+        "name": "YouTube",
+        "url": "https://www.youtube.com"
+    },
+    {
+        "id": "default-3",
+        "name": "Gmail",
+        "url": "https://mail.google.com",
+        "iconUrl": "https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico"
+    },
+    {
+        "id": "default-4",
+        "name": "GitHub",
+        "url": "https://github.com",
+        "iconUrl": "https://github.githubassets.com/favicons/favicon.svg"
+    },
+    {
+        "id": "default-5",
+        "name": "Twitter",
+        "url": "https://twitter.com",
+        "iconUrl": "https://abs.twimg.com/responsive-web/client-web/icon-default.522d363a.png"
+    },
+    {
+        "id": "default-6",
+        "name": "LinkedIn",
+        "url": "https://www.linkedin.com"
+    },
+    {
+        "id": "default-7",
+        "name": "Reddit",
+        "url": "https://www.reddit.com"
+    },
+    {
+        "id": "default-8",
+        "name": "Stack Overflow",
+        "url": "https://stackoverflow.com"
+    }
+]

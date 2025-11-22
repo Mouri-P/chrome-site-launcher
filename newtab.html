@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Tab</title>
+    <link rel="stylesheet" href="newtab.css">
+</head>
+<body id="siteLauncherBody">
+    <div class="launchpad-container">
+        <div id="sitesGrid" class="sites-grid">
+            <!-- Sites will be dynamically added here -->
+        </div>
+    </div>
+
+    <div class="button-group-container">
+        <div class="edit-mode-controls" id="editModeControls" style="display: none;">
+            <button id="doneEditBtn" class="done-btn" title="Done editing">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>Done</span>
+            </button>
+        </div>
+        <div class="theme-button-container">
+            <button id="themeBtn" class="theme-btn" title="Settings">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.24m4.24 4.24l4.24 4.24M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.24"></path>
+                </svg>
+            </button>
+        </div>
+        <div class="add-button-container">
+            <button id="addSiteBtn" class="add-site-btn" title="Add new site">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Add Site Modal -->
+    <div id="addSiteModal" class="modal">
+        <div class="modal-content">
+            <h2>Add New Site</h2>
+            <form id="addSiteForm">
+                <div class="form-group">
+                    <label for="siteName">Name</label>
+                    <input type="text" id="siteName" required placeholder="e.g., Google">
+                </div>
+                <div class="form-group">
+                    <label for="siteUrl">URL</label>
+                    <input type="url" id="siteUrl" required placeholder="https://example.com">
+                </div>
+                <div class="form-group">
+                    <label for="siteIconUrl">Icon URL (optional)</label>
+                    <input type="url" id="siteIconUrl" placeholder="https://example.com/icon.png">
+                    <small style="display: block; margin-top: 4px; color: #666; font-size: 12px;">Leave blank to use automatic favicon</small>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="cancelBtn" class="btn-cancel">Cancel</button>
+                    <button type="submit" class="btn-submit">Add Site</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="themeModal" class="modal">
+        <div class="modal-content settings-modal-content">
+            <div class="settings-sidebar">
+                <div class="settings-nav">
+                    <button class="settings-nav-item active" data-page="info">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                        <span>Info</span>
+                    </button>
+                    <button class="settings-nav-item" data-page="theme">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        <span>Theme</span>
+                    </button>
+                    <button class="settings-nav-item" data-page="importexport">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span>Import/Export</span>
+                    </button>
+                    <button class="settings-nav-item" data-page="edit">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                        <span>Edit Sites</span>
+                    </button>
+                </div>
+            </div>
+            <div class="settings-content">
+                <!-- Info Page -->
+                <div id="infoPage" class="settings-page active">
+                    <h2>About Site Launcher</h2>
+                    <div class="info-content">
+                        <p><strong>Version:</strong> 1.0.0</p>
+                        <p><strong>Description:</strong> A beautiful Mac Launchpad-style interface for launching your favorite websites.</p>
+                        
+                        <h3>Features</h3>
+                        <ul>
+                            <li>✨ Beautiful launchpad-style grid layout</li>
+                            <li>🎨 Customizable themes (colors & images)</li>
+                            <li>➕ Easy site management</li>
+                            <li>🔍 Automatic favicon loading</li>
+                            <li>🎯 Quick access to your favorite sites</li>
+                        </ul>
+
+                        <h3>Tips</h3>
+                        <ul>
+                            <li>Click the <strong>+</strong> button to quickly add new sites</li>
+                            <li>Use the settings button to customize your theme and manage sites</li>
+                            <li>Import your frequently visited sites from Chrome for quick setup</li>
+                        </ul>
+
+                        <h3>How to Use</h3>
+                        <ol>
+                            <li>Click the <strong>+</strong> button to add sites</li>
+                            <li>Click any site icon to open it</li>
+                            <li>Hover over icons and click the edit button to modify</li>
+                            <li>Customize your theme in the <strong>Theme</strong> section</li>
+                        </ol>
+
+                        <h3>Open Source</h3>
+                        <p>Site Launcher is open source and available on GitHub:</p>
+                        <p>
+                            <a href="https://github.com/YOUR_USERNAME/site-launcher" target="_blank" rel="noopener noreferrer" style="color: #667eea; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                                </svg>
+                                GitHub Repository
+                            </a>
+                        </p>
+                        <p style="color: #666; font-size: 13px; margin-top: 8px;">
+                            <em>Note: Update the GitHub URL in newtab.html before publishing</em>
+                        </p>
+
+                        <h3>Privacy</h3>
+                        <p>Your privacy is important to us. Site Launcher stores all data locally on your device and never transmits any information to external servers.</p>
+                        <p>
+                            <a href="#" id="privacyPolicyLink" target="_blank" rel="noopener noreferrer" style="color: #667eea; text-decoration: none;">
+                                View Full Privacy Policy →
+                            </a>
+                        </p>
+
+                        <div class="info-footer">
+                            <p>Enjoy your beautiful site launcher! 🚀</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Import/Export Page -->
+                <div id="importexportPage" class="settings-page">
+                    <h2>Import / Export Sites</h2>
+                    <div class="importexport-content">
+                        <div class="importexport-section">
+                            <h3>Import from Chrome</h3>
+                            <p>Import your frequently visited sites from Chrome's browsing history.</p>
+                            <button id="importChromeBtn" class="btn-submit" style="width: 100%; margin-top: 15px; background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                Import Frequently Visited Sites
+                            </button>
+                            <div id="chromeImportStatus" style="margin-top: 15px; padding: 10px; border-radius: 8px; display: none;"></div>
+                        </div>
+
+                        <div class="importexport-section" style="margin-top: 30px; padding-top: 30px; border-top: 1px solid #e0e0e0;">
+                            <h3>Export Sites</h3>
+                            <p>Download your current sites as a JSON file for backup or sharing.</p>
+                            <button id="exportBtn" class="btn-submit" style="width: 100%; margin-top: 15px;">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7 10 12 15 17 10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                Export Sites
+                            </button>
+                        </div>
+
+                        <div class="importexport-section" style="margin-top: 30px; padding-top: 30px; border-top: 1px solid #e0e0e0;">
+                            <h3>Import Sites</h3>
+                            <p>Import sites from a JSON file. You can choose to add to existing sites or replace them.</p>
+                            
+                            <div class="form-group" style="margin-top: 15px;">
+                                <label>
+                                    <input type="radio" name="importMode" value="merge" checked>
+                                    <span>Add to existing sites</span>
+                                </label>
+                                <label style="display: block; margin-top: 10px;">
+                                    <input type="radio" name="importMode" value="replace">
+                                    <span>Replace all existing sites</span>
+                                </label>
+                            </div>
+
+                            <div class="form-group" style="margin-top: 15px;">
+                                <label for="importFile">Select JSON file</label>
+                                <input type="file" id="importFile" accept=".json,application/json" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; margin-top: 8px;">
+                            </div>
+
+                            <button id="importBtn" class="btn-submit" style="width: 100%; margin-top: 15px;" disabled>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                Import Sites
+                            </button>
+
+                            <div id="importStatus" style="margin-top: 15px; padding: 10px; border-radius: 8px; display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Edit Sites Page -->
+                <div id="editPage" class="settings-page">
+                    <h2>Edit Sites</h2>
+                    <div class="edit-content">
+                        <p>Enable edit mode to rearrange, edit, or delete your sites.</p>
+                        <button id="enableEditModeBtn" class="btn-submit" style="width: 100%; margin-top: 20px;">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                            Enable Edit Mode
+                        </button>
+                        <div style="margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                            <h3 style="margin-bottom: 10px; font-size: 14px;">In Edit Mode:</h3>
+                            <ul style="margin-left: 20px; color: #666; font-size: 13px; line-height: 1.8;">
+                                <li>Drag sites to reorder them</li>
+                                <li>Click edit button to modify a site</li>
+                                <li>Click delete button to remove a site</li>
+                                <li>Click "Done" when finished</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Theme Page -->
+                <div id="themePage" class="settings-page">
+                    <h2>Customize Theme</h2>
+                    <form id="themeForm">
+                        <div class="form-group">
+                            <label>Background Type</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="bgType" value="color" checked>
+                                    <span>Color</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="bgType" value="image">
+                                    <span>Image</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div id="colorOptions" class="theme-options">
+                            <div class="form-group">
+                                <label for="bgColor">Background Color</label>
+                                <div class="color-presets">
+                                    <button type="button" class="color-preset" data-color="#ffffff" style="background: #ffffff; border: 1px solid #ddd;"></button>
+                                    <button type="button" class="color-preset" data-color="#f5f5f5" style="background: #f5f5f5;"></button>
+                                    <button type="button" class="color-preset" data-color="#e8e8e8" style="background: #e8e8e8;"></button>
+                                    <button type="button" class="color-preset" data-color="#667eea" style="background: #667eea;"></button>
+                                    <button type="button" class="color-preset" data-color="#764ba2" style="background: #764ba2;"></button>
+                                    <button type="button" class="color-preset" data-color="#1a1a1a" style="background: #1a1a1a;"></button>
+                                    <button type="button" class="color-preset" data-color="#2d2d2d" style="background: #2d2d2d;"></button>
+                                    <button type="button" class="color-preset" data-color="#0a0a0a" style="background: #0a0a0a;"></button>
+                                </div>
+                                <input type="color" id="bgColor" value="#ffffff">
+                            </div>
+                        </div>
+
+                        <div id="imageOptions" class="theme-options" style="display: none;">
+                            <div class="form-group">
+                                <label>Your Uploaded Images</label>
+                                <div class="image-presets" id="defaultImages">
+                                    <!-- Will be populated by JS with user-uploaded images -->
+                                </div>
+                                <small style="display: block; margin-top: 8px; color: #666; font-size: 12px;">Upload images below to see them here</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="localImage">Upload Image</label>
+                                <input type="file" id="localImage" accept="image/*">
+                                <small style="display: block; margin-top: 4px; color: #666; font-size: 12px;">Uploaded images are stored locally on your device</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="imageUrl">Or Use Image URL</label>
+                                <input type="url" id="imageUrl" placeholder="https://example.com/image.jpg">
+                                <small style="display: block; margin-top: 4px; color: #666; font-size: 12px;">Enter a direct link to an image</small>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" id="cancelThemeBtn" class="btn-cancel">Cancel</button>
+                            <button type="submit" class="btn-submit">Apply Theme</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Site Modal -->
+    <div id="editSiteModal" class="modal">
+        <div class="modal-content">
+            <h2>Edit Site</h2>
+            <form id="editSiteForm">
+                <input type="hidden" id="editSiteId">
+                <div class="form-group">
+                    <label for="editSiteName">Name</label>
+                    <input type="text" id="editSiteName" required>
+                </div>
+                <div class="form-group">
+                    <label for="editSiteUrl">URL</label>
+                    <input type="url" id="editSiteUrl" required>
+                </div>
+                <div class="form-group">
+                    <label for="editSiteIconUrl">Icon URL (optional)</label>
+                    <input type="url" id="editSiteIconUrl" placeholder="https://example.com/icon.png">
+                    <small style="display: block; margin-top: 4px; color: #666; font-size: 12px;">Leave blank to use automatic favicon</small>
+                </div>
+                <div class="form-actions">
+                    <button type="button" id="deleteSiteBtn" class="btn-delete">Delete</button>
+                    <div style="flex: 1;"></div>
+                    <button type="button" id="cancelEditBtn" class="btn-cancel">Cancel</button>
+                    <button type="submit" class="btn-submit">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="newtab.js"></script>
+</body>
+</html>
+
