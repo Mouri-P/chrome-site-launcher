@@ -135,9 +135,13 @@ Change value for more/less rounded corners (0 = square, 50px = circle).
 
 ## Support
 
-For issues or feature requests, feel free to modify the code! This is a fully open-source extension built with vanilla JavaScript, HTML, and CSS.
+For issues or feature requests, please visit our [GitHub repository](https://github.com/Mouri-P/chrome-site-launcher) or open an issue. This is a fully open-source extension built with vanilla JavaScript, HTML, and CSS.
 
 ## License
 
 Free to use and modify! Enjoy your beautiful site launcher! 🚀
+
+## Repository
+
+View the source code and contribute on [GitHub](https://github.com/Mouri-P/chrome-site-launcher)
 

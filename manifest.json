@@ -3,6 +3,7 @@
   "name": "Site Launcher",
   "version": "1.0.0",
   "description": "Launch your favorite websites from a beautiful launchpad-style interface",
+  "homepage_url": "https://github.com/Mouri-P/chrome-site-launcher",
   "permissions": [
     "storage",
     "tabs",
