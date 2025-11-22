@@ -1,0 +1,502 @@
+[
+    {
+        "id": "default-1",
+        "name": "Google",
+        "url": "https://www.google.com"
+    },
+    {
+        "id": "default-2",
+        "name": "YouTube",
+        "url": "https://www.youtube.com"
+    },
+    {
+        "id": "default-3",
+        "name": "Gmail",
+        "url": "https://mail.google.com"
+    },
+    {
+        "id": "default-4",
+        "name": "GitHub",
+        "url": "https://github.com"
+    },
+    {
+        "id": "default-5",
+        "name": "Twitter",
+        "url": "https://twitter.com"
+    },
+    {
+        "id": "default-6",
+        "name": "LinkedIn",
+        "url": "https://www.linkedin.com"
+    },
+    {
+        "id": "default-7",
+        "name": "Reddit",
+        "url": "https://www.reddit.com"
+    },
+    {
+        "id": "default-8",
+        "name": "Stack Overflow",
+        "url": "https://stackoverflow.com"
+    },
+    {
+        "id": "default-9",
+        "name": "Facebook",
+        "url": "https://www.facebook.com"
+    },
+    {
+        "id": "default-10",
+        "name": "Instagram",
+        "url": "https://www.instagram.com"
+    },
+    {
+        "id": "default-11",
+        "name": "Amazon",
+        "url": "https://www.amazon.com"
+    },
+    {
+        "id": "default-12",
+        "name": "Wikipedia",
+        "url": "https://www.wikipedia.org"
+    },
+    {
+        "id": "default-13",
+        "name": "Netflix",
+        "url": "https://www.netflix.com"
+    },
+    {
+        "id": "default-14",
+        "name": "Yahoo",
+        "url": "https://www.yahoo.com"
+    },
+    {
+        "id": "default-15",
+        "name": "Twitch",
+        "url": "https://www.twitch.tv"
+    },
+    {
+        "id": "default-16",
+        "name": "Pinterest",
+        "url": "https://www.pinterest.com"
+    },
+    {
+        "id": "default-17",
+        "name": "Quora",
+        "url": "https://www.quora.com"
+    },
+    {
+        "id": "default-18",
+        "name": "eBay",
+        "url": "https://www.ebay.com"
+    },
+    {
+        "id": "default-19",
+        "name": "Microsoft",
+        "url": "https://www.microsoft.com"
+    },
+    {
+        "id": "default-20",
+        "name": "Apple",
+        "url": "https://www.apple.com"
+    },
+    {
+        "id": "default-21",
+        "name": "BBC",
+        "url": "https://www.bbc.com"
+    },
+    {
+        "id": "default-22",
+        "name": "NY Times",
+        "url": "https://www.nytimes.com"
+    },
+    {
+        "id": "default-23",
+        "name": "CNN",
+        "url": "https://www.cnn.com"
+    },
+    {
+        "id": "default-24",
+        "name": "Dropbox",
+        "url": "https://www.dropbox.com"
+    },
+    {
+        "id": "default-25",
+        "name": "WhatsApp",
+        "url": "https://web.whatsapp.com"
+    },
+    {
+        "id": "default-26",
+        "name": "Slack",
+        "url": "https://slack.com"
+    },
+    {
+        "id": "default-27",
+        "name": "Asana",
+        "url": "https://asana.com"
+    },
+    {
+        "id": "default-28",
+        "name": "Trello",
+        "url": "https://trello.com"
+    },
+    {
+        "id": "default-29",
+        "name": "Figma",
+        "url": "https://www.figma.com"
+    },
+    {
+        "id": "default-30",
+        "name": "Spotify",
+        "url": "https://www.spotify.com"
+    },
+    {
+        "id": "default-31",
+        "name": "SoundCloud",
+        "url": "https://www.soundcloud.com"
+    },
+    {
+        "id": "default-32",
+        "name": "Vimeo",
+        "url": "https://vimeo.com"
+    },
+    {
+        "id": "default-33",
+        "name": "Hacker News",
+        "url": "https://news.ycombinator.com"
+    },
+    {
+        "id": "default-34",
+        "name": "Product Hunt",
+        "url": "https://www.producthunt.com"
+    },
+    {
+        "id": "default-35",
+        "name": "Dribbble",
+        "url": "https://dribbble.com"
+    },
+    {
+        "id": "default-36",
+        "name": "Behance",
+        "url": "https://www.behance.net"
+    },
+    {
+        "id": "default-37",
+        "name": "Coursera",
+        "url": "https://www.coursera.org"
+    },
+    {
+        "id": "default-38",
+        "name": "Udemy",
+        "url": "https://www.udemy.com"
+    },
+    {
+        "id": "default-39",
+        "name": "Khan Academy",
+        "url": "https://www.khanacademy.org"
+    },
+    {
+        "id": "default-40",
+        "name": "edX",
+        "url": "https://www.edx.org"
+    },
+    {
+        "id": "default-41",
+        "name": "CodePen",
+        "url": "https://codepen.io"
+    },
+    {
+        "id": "default-42",
+        "name": "JSFiddle",
+        "url": "https://jsfiddle.net"
+    },
+    {
+        "id": "default-43",
+        "name": "W3Schools",
+        "url": "https://www.w3schools.com"
+    },
+    {
+        "id": "default-44",
+        "name": "MDN Web Docs",
+        "url": "https://developer.mozilla.org"
+    },
+    {
+        "id": "default-45",
+        "name": "CodeSandbox",
+        "url": "https://codesandbox.io"
+    },
+    {
+        "id": "default-46",
+        "name": "GitLab",
+        "url": "https://gitlab.com"
+    },
+    {
+        "id": "default-47",
+        "name": "Bitbucket",
+        "url": "https://bitbucket.org"
+    },
+    {
+        "id": "default-48",
+        "name": "Heroku",
+        "url": "https://www.heroku.com"
+    },
+    {
+        "id": "default-49",
+        "name": "Glitch",
+        "url": "https://glitch.com"
+    },
+    {
+        "id": "default-50",
+        "name": "Repl.it",
+        "url": "https://replit.com"
+    },
+    {
+        "id": "default-51",
+        "name": "Canva",
+        "url": "https://www.canva.com"
+    },
+    {
+        "id": "default-52",
+        "name": "Airbnb",
+        "url": "https://www.airbnb.com"
+    },
+    {
+        "id": "default-53",
+        "name": "Booking.com",
+        "url": "https://www.booking.com"
+    },
+    {
+        "id": "default-54",
+        "name": "TripAdvisor",
+        "url": "https://www.tripadvisor.com"
+    },
+    {
+        "id": "default-55",
+        "name": "Expedia",
+        "url": "https://www.expedia.com"
+    },
+    {
+        "id": "default-56",
+        "name": "Indeed",
+        "url": "https://www.indeed.com"
+    },
+    {
+        "id": "default-57",
+        "name": "Glassdoor",
+        "url": "https://www.glassdoor.com"
+    },
+    {
+        "id": "default-58",
+        "name": "Monster",
+        "url": "https://www.monster.com"
+    },
+    {
+        "id": "default-59",
+        "name": "Stack Exchange",
+        "url": "https://stackexchange.com"
+    },
+    {
+        "id": "default-60",
+        "name": "Dev.to",
+        "url": "https://dev.to"
+    },
+    {
+        "id": "default-61",
+        "name": "Medium",
+        "url": "https://medium.com"
+    },
+    {
+        "id": "default-62",
+        "name": "The Verge",
+        "url": "https://www.theverge.com"
+    },
+    {
+        "id": "default-63",
+        "name": "TechCrunch",
+        "url": "https://techcrunch.com"
+    },
+    {
+        "id": "default-64",
+        "name": "Mashable",
+        "url": "https://mashable.com"
+    },
+    {
+        "id": "default-65",
+        "name": "Lifehacker",
+        "url": "https://lifehacker.com"
+    },
+    {
+        "id": "default-66",
+        "name": "Gizmodo",
+        "url": "https://gizmodo.com"
+    },
+    {
+        "id": "default-67",
+        "name": "Engadget",
+        "url": "https://engadget.com"
+    },
+    {
+        "id": "default-68",
+        "name": "Wired",
+        "url": "https://www.wired.com"
+    },
+    {
+        "id": "default-69",
+        "name": "Bloomberg",
+        "url": "https://www.bloomberg.com"
+    },
+    {
+        "id": "default-70",
+        "name": "Forbes",
+        "url": "https://www.forbes.com"
+    },
+    {
+        "id": "default-71",
+        "name": "Reuters",
+        "url": "https://www.reuters.com"
+    },
+    {
+        "id": "default-72",
+        "name": "WSJ",
+        "url": "https://www.wsj.com"
+    },
+    {
+        "id": "default-73",
+        "name": "The Guardian",
+        "url": "https://www.theguardian.com"
+    },
+    {
+        "id": "default-74",
+        "name": "Al Jazeera",
+        "url": "https://www.aljazeera.com"
+    },
+    {
+        "id": "default-75",
+        "name": "The Washington Post",
+        "url": "https://www.washingtonpost.com"
+    },
+    {
+        "id": "default-76",
+        "name": "USA Today",
+        "url": "https://www.usatoday.com"
+    },
+    {
+        "id": "default-77",
+        "name": "Fox News",
+        "url": "https://www.foxnews.com"
+    },
+    {
+        "id": "default-78",
+        "name": "Weather.com",
+        "url": "https://weather.com"
+    },
+    {
+        "id": "default-79",
+        "name": "AccuWeather",
+        "url": "https://www.accuweather.com"
+    },
+    {
+        "id": "default-80",
+        "name": "National Geographic",
+        "url": "https://www.nationalgeographic.com"
+    },
+    {
+        "id": "default-81",
+        "name": "NASA",
+        "url": "https://www.nasa.gov"
+    },
+    {
+        "id": "default-82",
+        "name": "Space.com",
+        "url": "https://www.space.com"
+    },
+    {
+        "id": "default-83",
+        "name": "LiveScience",
+        "url": "https://www.livescience.com"
+    },
+    {
+        "id": "default-84",
+        "name": "Scientific American",
+        "url": "https://www.scientificamerican.com"
+    },
+    {
+        "id": "default-85",
+        "name": "Nature",
+        "url": "https://www.nature.com"
+    },
+    {
+        "id": "default-86",
+        "name": "Science",
+        "url": "https://www.sciencemag.org"
+    },
+    {
+        "id": "default-87",
+        "name": "Springer",
+        "url": "https://www.springer.com"
+    },
+    {
+        "id": "default-88",
+        "name": "Elsevier",
+        "url": "https://www.elsevier.com"
+    },
+    {
+        "id": "default-89",
+        "name": "Arxiv",
+        "url": "https://arxiv.org"
+    },
+    {
+        "id": "default-90",
+        "name": "ResearchGate",
+        "url": "https://www.researchgate.net"
+    },
+    {
+        "id": "default-91",
+        "name": "JSTOR",
+        "url": "https://www.jstor.org"
+    },
+    {
+        "id": "default-92",
+        "name": "TED",
+        "url": "https://www.ted.com"
+    },
+    {
+        "id": "default-93",
+        "name": "Investopedia",
+        "url": "https://www.investopedia.com"
+    },
+    {
+        "id": "default-94",
+        "name": "CoinMarketCap",
+        "url": "https://coinmarketcap.com"
+    },
+    {
+        "id": "default-95",
+        "name": "CoinGecko",
+        "url": "https://www.coingecko.com"
+    },
+    {
+        "id": "default-96",
+        "name": "Bloomberg Crypto",
+        "url": "https://www.bloomberg.com/crypto"
+    },
+    {
+        "id": "default-97",
+        "name": "CryptoCompare",
+        "url": "https://www.cryptocompare.com"
+    },
+    {
+        "id": "default-98",
+        "name": "GitKraken",
+        "url": "https://www.gitkraken.com"
+    },
+    {
+        "id": "default-99",
+        "name": "ThemeForest",
+        "url": "https://themeforest.net"
+    },
+    {
+        "id": "default-100",
+        "name": "Envato",
+        "url": "https://envato.com"
+    }
+]
