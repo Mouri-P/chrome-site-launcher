@@ -541,6 +541,24 @@ async function loadTheme() {
     applyTheme(theme);
 }
 
+// Load and apply icon size
+async function loadIconSize() {
+    const result = await chrome.storage.local.get(['iconSize']);
+    const iconSize = result.iconSize || 100;
+    applyIconSize(iconSize);
+}
+
+// Apply icon size to CSS variable
+function applyIconSize(size) {
+    document.documentElement.style.setProperty('--icon-size', `${size}px`);
+}
+
+// Save icon size
+async function saveIconSize(size) {
+    await chrome.storage.local.set({ iconSize: size });
+    applyIconSize(size);
+}
+
 // Calculate brightness of a color (0-255)
 function getColorBrightness(color) {
     let r, g, b;
@@ -733,8 +751,9 @@ themeBtn.addEventListener('click', async () => {
     // Populate default images for theme page
     await populateDefaultImages();
     
-    const result = await chrome.storage.local.get(['theme']);
+    const result = await chrome.storage.local.get(['theme', 'iconSize']);
     const theme = result.theme || { type: 'color', value: '#ffffff' };
+    const iconSize = result.iconSize || 100;
     
     // Set current theme values (for when user navigates to theme page)
     if (theme.type === 'color') {
@@ -754,6 +773,17 @@ themeBtn.addEventListener('click', async () => {
             imageOptions.style.display = 'block';
         }
     }
+    
+    // Set current icon size value
+    const iconSizeInput = document.getElementById('iconSize');
+    const iconSizeValue = document.getElementById('iconSizeValue');
+    if (iconSizeInput && iconSizeValue) {
+        iconSizeInput.value = iconSize;
+        iconSizeValue.textContent = `${iconSize}px`;
+    }
+    
+    // Setup icon size slider
+    setupIconSizeSlider();
     
     themeModal.classList.add('active');
 });
@@ -803,6 +833,21 @@ document.querySelectorAll('.color-preset').forEach(preset => {
     });
 });
 
+// Icon size slider - setup event listener
+function setupIconSizeSlider() {
+    const iconSizeInput = document.getElementById('iconSize');
+    const iconSizeValue = document.getElementById('iconSizeValue');
+    if (iconSizeInput && iconSizeValue && !iconSizeInput.dataset.listenerAttached) {
+        iconSizeInput.addEventListener('input', (e) => {
+            const size = parseInt(e.target.value);
+            iconSizeValue.textContent = `${size}px`;
+            // Apply preview in real-time
+            applyIconSize(size);
+        });
+        iconSizeInput.dataset.listenerAttached = 'true';
+    }
+}
+
 // Theme form submission
 themeForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -832,6 +877,10 @@ themeForm.addEventListener('submit', async (e) => {
                     await chrome.storage.local.set({ customImages });
                 }
                 
+                // Save icon size
+                const iconSize = parseInt(document.getElementById('iconSize').value) || 100;
+                await saveIconSize(iconSize);
+                
                 await chrome.storage.local.set({ theme });
                 applyTheme(theme);
                 themeModal.classList.remove('active');
@@ -845,6 +894,10 @@ themeForm.addEventListener('submit', async (e) => {
             return;
         }
     }
+    
+    // Save icon size
+    const iconSize = parseInt(document.getElementById('iconSize').value) || 100;
+    await saveIconSize(iconSize);
     
     await chrome.storage.local.set({ theme });
     applyTheme(theme);
@@ -1106,7 +1159,9 @@ if (doneEditBtn) {
     });
 }
 
-// Load theme and initial render
+// Load theme and icon size, then initial render
 loadTheme();
+loadIconSize();
+setupIconSizeSlider();
 renderSites();
 
