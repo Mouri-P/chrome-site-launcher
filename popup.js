@@ -17,14 +17,34 @@ async function saveSites(sites) {
     await chrome.storage.local.set({ sites });
 }
 
-// Get favicon URL
-function getFaviconUrl(url) {
+// Get all possible favicon URLs in order of preference
+function getFaviconUrls(url) {
     try {
-        const domain = new URL(url).hostname;
-        return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
+        const parsedUrl = new URL(url);
+        const origin = parsedUrl.origin;
+        
+        return [
+            // `${origin}/favicon.ico`,
+            // `${origin}/favicon.png`,
+            // `${origin}/apple-touch-icon.png`,
+            // `${origin}/apple-touch-icon-precomposed.png`,
+            // `${origin}/favicon-32x32.png`,
+            // `${origin}/favicon-16x16.png`,
+            // `${origin}/icon.png`,
+            // `${origin}/icons/favicon.ico`,
+            // `${origin}/icons/favicon.png`,
+            // Google's favicon service as last resort before SVG
+            `https://www.google.com/s2/favicons?domain=${parsedUrl.hostname}&sz=128`
+        ];
     } catch (e) {
-        return null;
+        return [];
     }
+}
+
+// Get first favicon URL (for initial render)
+function getFaviconUrl(url) {
+    const urls = getFaviconUrls(url);
+    return urls.length > 0 ? urls[0] : null;
 }
 
 // Get first letter for fallback
@@ -57,18 +77,96 @@ async function init() {
     document.getElementById('siteTitle').textContent = title;
     document.getElementById('siteUrl').textContent = new URL(url).hostname;
     
-    const faviconUrl = getFaviconUrl(url);
+    const faviconUrls = getFaviconUrls(url);
     const faviconContainer = document.getElementById('siteFavicon');
+    const defaultIconUrl = chrome.runtime.getURL('assets/applications-internet.svg');
     
-    if (faviconUrl) {
-        const img = document.createElement('img');
-        img.src = faviconUrl;
-        img.onerror = () => {
+    if (faviconUrls.length > 0) {
+        let currentIndex = 0;
+        
+        const tryNextFavicon = () => {
+            if (currentIndex < faviconUrls.length) {
+                const currentUrl = faviconUrls[currentIndex];
+                const isGoogleFaviconService = currentUrl && currentUrl.includes('www.google.com/s2/favicons');
+                
+                const img = document.createElement('img');
+                img.src = currentUrl;
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'contain';
+                
+                img.onerror = () => {
+                    // If Google's favicon service failed, immediately use SVG fallback
+                    if (isGoogleFaviconService) {
+                        const svgImg = document.createElement('img');
+                        svgImg.src = defaultIconUrl;
+                        svgImg.style.width = '100%';
+                        svgImg.style.height = '100%';
+                        svgImg.style.objectFit = 'contain';
+                        svgImg.onerror = () => {
+                            faviconContainer.textContent = getInitial(title);
+                        };
+                        faviconContainer.innerHTML = '';
+                        faviconContainer.appendChild(svgImg);
+                        return;
+                    }
+                    
+                    // Try next favicon URL
+                    currentIndex++;
+                    tryNextFavicon();
+                };
+                
+                img.onload = () => {
+                    // Check if this is from Google's favicon service and if it's a 404 placeholder
+                    if (isGoogleFaviconService) {
+                        // Google's 404 placeholder is typically 16x16 pixels
+                        // Check if the natural dimensions are 16x16 (404 placeholder)
+                        if (img.naturalWidth === 16 && img.naturalHeight === 16) {
+                            // This is a 404 placeholder, use SVG fallback instead
+                            const svgImg = document.createElement('img');
+                            svgImg.src = defaultIconUrl;
+                            svgImg.style.width = '100%';
+                            svgImg.style.height = '100%';
+                            svgImg.style.objectFit = 'contain';
+                            svgImg.onerror = () => {
+                                faviconContainer.textContent = getInitial(title);
+                            };
+                            faviconContainer.innerHTML = '';
+                            faviconContainer.appendChild(svgImg);
+                            return;
+                        }
+                    }
+                    
+                    faviconContainer.innerHTML = '';
+                    faviconContainer.appendChild(img);
+                };
+            } else {
+                // All favicon URLs exhausted, try SVG fallback
+                const svgImg = document.createElement('img');
+                svgImg.src = defaultIconUrl;
+                svgImg.style.width = '100%';
+                svgImg.style.height = '100%';
+                svgImg.style.objectFit = 'contain';
+                svgImg.onerror = () => {
+                    faviconContainer.textContent = getInitial(title);
+                };
+                faviconContainer.innerHTML = '';
+                faviconContainer.appendChild(svgImg);
+            }
+        };
+        
+        tryNextFavicon();
+    } else {
+        // No favicon URLs available, use SVG fallback
+        const svgImg = document.createElement('img');
+        svgImg.src = defaultIconUrl;
+        svgImg.style.width = '100%';
+        svgImg.style.height = '100%';
+        svgImg.style.objectFit = 'contain';
+        svgImg.onerror = () => {
             faviconContainer.textContent = getInitial(title);
         };
-        faviconContainer.appendChild(img);
-    } else {
-        faviconContainer.textContent = getInitial(title);
+        faviconContainer.appendChild(svgImg);
     }
 
     // Check if site already exists

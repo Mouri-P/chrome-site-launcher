@@ -162,7 +162,7 @@
 
                 <!-- Import/Export Page -->
                 <div id="importexportPage" class="settings-page">
-                    <h2>Import / Export Sites</h2>
+                    <h2>Import / Export Data</h2>
                     <div class="importexport-content">
                         <div class="importexport-section">
                             <h3>Import from Chrome</h3>
@@ -179,30 +179,30 @@
                         </div>
 
                         <div class="importexport-section" style="margin-top: 30px; padding-top: 30px; border-top: 1px solid #e0e0e0;">
-                            <h3>Export Sites</h3>
-                            <p>Download your current sites as a JSON file for backup or sharing.</p>
+                            <h3>Export All Data</h3>
+                            <p>Download all your launcher data (sites, scripts, themes, settings) as a JSON file for backup or sharing.</p>
                             <button id="exportBtn" class="btn-submit" style="width: 100%; margin-top: 15px;">
                                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                     <polyline points="7 10 12 15 17 10"></polyline>
                                     <line x1="12" y1="15" x2="12" y2="3"></line>
                                 </svg>
-                                Export Sites
+                                Export All Data
                             </button>
                         </div>
 
                         <div class="importexport-section" style="margin-top: 30px; padding-top: 30px; border-top: 1px solid #e0e0e0;">
-                            <h3>Import Sites</h3>
-                            <p>Import sites from a JSON file. You can choose to add to existing sites or replace them.</p>
+                            <h3>Import All Data</h3>
+                            <p>Import all launcher data from a JSON file. You can choose to merge with existing data or replace everything.</p>
                             
                             <div class="form-group" style="margin-top: 15px;">
                                 <label>
                                     <input type="radio" name="importMode" value="merge" checked>
-                                    <span>Add to existing sites</span>
+                                    <span>Merge with existing data</span>
                                 </label>
                                 <label style="display: block; margin-top: 10px;">
                                     <input type="radio" name="importMode" value="replace">
-                                    <span>Replace all existing sites</span>
+                                    <span>Replace all existing data</span>
                                 </label>
                             </div>
 
@@ -217,7 +217,7 @@
                                     <polyline points="17 8 12 3 7 8"></polyline>
                                     <line x1="12" y1="3" x2="12" y2="15"></line>
                                 </svg>
-                                Import Sites
+                                Import All Data
                             </button>
 
                             <div id="importStatus" style="margin-top: 15px; padding: 10px; border-radius: 8px; display: none;"></div>
@@ -230,6 +230,17 @@
                     <h2>Edit Sites</h2>
                     <div class="edit-content">
                         <p>Enable edit mode to rearrange, edit, or delete your sites.</p>
+                        
+                        <div class="form-group" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e0e0e0;">
+                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
+                                <input type="checkbox" id="showEditOnHover" style="width: auto; margin: 0; cursor: pointer;">
+                                <span style="font-weight: 500;">Show edit options on hover</span>
+                            </label>
+                            <small style="display: block; margin-top: 8px; color: #666; font-size: 12px; margin-left: 28px;">
+                                When enabled, edit, delete, and advanced buttons will appear when hovering over site icons, even when edit mode is off.
+                            </small>
+                        </div>
+                        
                         <button id="enableEditModeBtn" class="btn-submit" style="width: 100%; margin-top: 20px;">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -356,6 +367,33 @@
                     <div style="flex: 1;"></div>
                     <button type="button" id="cancelEditBtn" class="btn-cancel">Cancel</button>
                     <button type="submit" class="btn-submit">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Advanced Scripts Modal -->
+    <div id="advancedScriptsModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2>Advanced Scripts</h2>
+            <p style="margin-bottom: 20px; color: #666; font-size: 14px;">Add custom JavaScript scripts to be injected when this site is opened. Scripts will execute based on the timing you select.</p>
+            <form id="advancedScriptsForm">
+                <input type="hidden" id="advancedSiteId">
+                <div id="scriptsContainer">
+                    <!-- Scripts will be dynamically added here -->
+                </div>
+                <div style="margin-top: 15px;">
+                    <button type="button" id="addScriptBtn" class="btn-add-script">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 6px;">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add Script
+                    </button>
+                </div>
+                <div class="form-actions" style="margin-top: 25px;">
+                    <button type="button" id="cancelAdvancedBtn" class="btn-cancel">Cancel</button>
+                    <button type="submit" class="btn-submit">Save Scripts</button>
                 </div>
             </form>
         </div>

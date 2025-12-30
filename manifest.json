@@ -8,10 +8,12 @@
     "storage",
     "tabs",
     "activeTab",
-    "topSites"
+    "topSites",
+    "scripting"
   ],
   "host_permissions": [
-    "https://www.google.com/*"
+    "https://www.google.com/*",
+    "<all_urls>"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -33,12 +35,15 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["default-sites.json", "default-images/*", "privacy-policy.html", "privacy-policy.js"],
+      "resources": ["default.json", "default-images/*", "privacy-policy.html", "privacy-policy.js"],
       "matches": ["<all_urls>"]
     }
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+  "background": {
+    "service_worker": "background.js"
   }
 }
 
