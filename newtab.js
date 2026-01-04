@@ -56,17 +56,16 @@ function getFaviconUrls(url) {
         const origin = parsedUrl.origin;
         
         return [
-            // `${origin}/favicon.ico`,
-            // `${origin}/favicon.png`,
-            // `${origin}/apple-touch-icon.png`,
-            // `${origin}/apple-touch-icon-precomposed.png`,
-            // `${origin}/favicon-32x32.png`,
-            // `${origin}/favicon-16x16.png`,
-            // `${origin}/icon.png`,
-            // `${origin}/icons/favicon.ico`,
-            // `${origin}/icons/favicon.png`,
-            // Google's favicon service as last resort before SVG
-            `https://www.google.com/s2/favicons?domain=${parsedUrl.hostname}&sz=128`
+            `https://www.google.com/s2/favicons?domain=${parsedUrl.hostname}&sz=128`,
+            `${origin}/icon.png`,
+            `${origin}/apple-touch-icon.png`,
+            `${origin}/apple-touch-icon-precomposed.png`,
+            `${origin}/favicon-32x32.png`,
+            `${origin}/favicon-16x16.png`,
+            `${origin}/favicon.ico`,
+            `${origin}/favicon.png`,
+            `${origin}/icons/favicon.ico`,
+            `${origin}/icons/favicon.png`,
         ];
     } catch (e) {
         return [];
@@ -1083,6 +1082,11 @@ function showSettingsPage(pageId) {
     if (navItem) {
         navItem.classList.add('active');
     }
+    
+    // Render scripts if scripts page is shown
+    if (pageId === 'scripts') {
+        renderGlobalScripts();
+    }
 }
 
 // Setup navigation
@@ -1343,7 +1347,8 @@ exportBtn.addEventListener('click', async () => {
             theme: allData.theme || null,
             iconSize: allData.iconSize || 100,
             customImages: allData.customImages || [],
-            showEditOnHover: allData.showEditOnHover || false
+            showEditOnHover: allData.showEditOnHover || false,
+            globalScripts: allData.globalScripts || []
         }
     };
     
@@ -1449,6 +1454,12 @@ importBtn.addEventListener('click', async () => {
                 message.push('Settings imported');
             }
             
+            // Import global scripts
+            if (dataToImport.globalScripts && Array.isArray(dataToImport.globalScripts)) {
+                await chrome.storage.local.set({ globalScripts: dataToImport.globalScripts });
+                message.push(`${dataToImport.globalScripts.length} global script(s) imported`);
+            }
+            
             showImportStatus(`Successfully imported: ${message.join(', ')}. All data replaced.`, 'success');
         } else {
             // Merge with existing data
@@ -1509,6 +1520,17 @@ importBtn.addEventListener('click', async () => {
                 message.push('Settings updated');
             }
             
+            // Merge global scripts
+            if (dataToImport.globalScripts && Array.isArray(dataToImport.globalScripts)) {
+                const currentScripts = await getGlobalScripts();
+                const existingNames = new Set(currentScripts.map(s => s.name));
+                const newScripts = dataToImport.globalScripts.filter(s => !existingNames.has(s.name));
+                if (newScripts.length > 0) {
+                    await chrome.storage.local.set({ globalScripts: [...currentScripts, ...newScripts] });
+                    message.push(`${newScripts.length} new global script(s) added`);
+                }
+            }
+            
             showImportStatus(`Successfully imported: ${message.join(', ')}.`, 'success');
         }
         
@@ -1520,6 +1542,7 @@ importBtn.addEventListener('click', async () => {
         renderSites();
         loadTheme();
         loadIconSize();
+        renderGlobalScripts();
         
         // Close modal after a delay
         setTimeout(() => {
@@ -1698,26 +1721,30 @@ function createScriptItem(script = null) {
     const code = script?.code || '';
     const runAlways = script?.runAlways !== false; // Default to true (always run)
     
+    const timingSelectId = `script-timing-${scriptId}`;
+    const codeTextareaId = `script-code-${scriptId}`;
     scriptItem.innerHTML = `
         <div class="script-item-header">
-            <label>Script ${scriptId + 1}</label>
+            <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: #333;">Script ${scriptId + 1}</h4>
             <button type="button" class="remove-script-btn" data-script-id="${scriptId}">Remove</button>
         </div>
         <div class="form-group" style="margin-bottom: 10px;">
             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                <input type="checkbox" class="script-run-always" data-script-id="${scriptId}" ${runAlways ? 'checked' : ''}>
+                <input type="checkbox" class="script-run-always" name="script-run-always-${scriptId}" data-script-id="${scriptId}" ${runAlways ? 'checked' : ''}>
                 <span>Run always (even if not opened via launcher)</span>
             </label>
             <small style="display: block; margin-top: 4px; color: #666; font-size: 12px; margin-left: 24px;">
                 Uncheck to run only when opened via launcher
             </small>
         </div>
-        <select class="script-timing-select" data-script-id="${scriptId}">
+        <label for="${timingSelectId}" style="display: block; margin-bottom: 8px; color: #555; font-weight: 500; font-size: 13px;">Execution Timing</label>
+        <select id="${timingSelectId}" class="script-timing-select" name="script-timing-${scriptId}" data-script-id="${scriptId}">
             <option value="document_start" ${timing === 'document_start' ? 'selected' : ''}>Before DOM (document_start)</option>
             <option value="document_end" ${timing === 'document_end' ? 'selected' : ''}>After DOM (document_end)</option>
             <option value="document_idle" ${timing === 'document_idle' ? 'selected' : ''}>After Page Load (document_idle)</option>
         </select>
-        <textarea class="script-code-textarea" placeholder="Enter your JavaScript code here..." data-script-id="${scriptId}">${code}</textarea>
+        <label for="${codeTextareaId}" style="display: block; margin-top: 10px; margin-bottom: 8px; color: #555; font-weight: 500; font-size: 13px;">Script Code</label>
+        <textarea id="${codeTextareaId}" class="script-code-textarea" name="script-code-${scriptId}" placeholder="Enter your JavaScript code here..." data-script-id="${scriptId}">${code}</textarea>
     `;
     
     // Add remove button handler
@@ -1847,6 +1874,461 @@ function setupAdvancedModalListeners() {
 
 // Initialize advanced modal listeners
 setupAdvancedModalListeners();
+
+// ==================== Global Scripts Management ====================
+
+let globalScriptCodeCounter = 0;
+
+// Get global scripts from storage
+async function getGlobalScripts() {
+    const result = await chrome.storage.local.get(['globalScripts']);
+    return result.globalScripts || [];
+}
+
+// Save global scripts to storage
+async function saveGlobalScripts(scripts) {
+    await chrome.storage.local.set({ globalScripts: scripts });
+}
+
+// Create a script code block item
+function createGlobalScriptCodeItem(scriptCode = null) {
+    const codeId = globalScriptCodeCounter++;
+    const codeItem = document.createElement('div');
+    codeItem.className = 'global-script-code-item';
+    codeItem.dataset.codeId = codeId;
+    
+    const timing = scriptCode?.timing || 'document_end';
+    const code = scriptCode?.code || '';
+    
+    const timingSelectId = `script-code-timing-${codeId}`;
+    const codeTextareaId = `script-code-text-${codeId}`;
+    codeItem.innerHTML = `
+        <div class="script-code-item-header">
+            <h4 style="margin: 0; font-size: 13px; font-weight: 600; color: #333;">Code Block ${codeId + 1}</h4>
+            <button type="button" class="remove-script-code-btn" data-code-id="${codeId}">Remove</button>
+        </div>
+        <label for="${timingSelectId}" style="display: block; margin-bottom: 8px; color: #555; font-weight: 500; font-size: 13px;">Execution Timing</label>
+        <select id="${timingSelectId}" class="script-code-timing-select" name="script-code-timing-${codeId}" data-code-id="${codeId}" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px; font-size: 14px;">
+            <option value="document_start" ${timing === 'document_start' ? 'selected' : ''}>Before DOM (document_start)</option>
+            <option value="document_end" ${timing === 'document_end' ? 'selected' : ''}>After DOM (document_end)</option>
+            <option value="document_idle" ${timing === 'document_idle' ? 'selected' : ''}>After Page Load (document_idle)</option>
+        </select>
+        <label for="${codeTextareaId}" style="display: block; margin-bottom: 8px; color: #555; font-weight: 500; font-size: 13px;">Script Code</label>
+        <textarea id="${codeTextareaId}" class="script-code-textarea" name="script-code-text-${codeId}" placeholder="Enter your JavaScript code here..." data-code-id="${codeId}" style="width: 100%; min-height: 150px; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 13px; resize: vertical;">${code}</textarea>
+    `;
+    
+    // Add remove button handler
+    const removeBtn = codeItem.querySelector('.remove-script-code-btn');
+    removeBtn.addEventListener('click', () => {
+        codeItem.remove();
+    });
+    
+    return codeItem;
+}
+
+// Render global scripts list
+async function renderGlobalScripts() {
+    const scripts = await getGlobalScripts();
+    const container = document.getElementById('globalScriptsContainer');
+    
+    if (!container) return;
+    
+    if (scripts.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state" style="padding: 40px 20px;">
+                <p style="color: #666; font-size: 14px;">No global scripts yet. Click "Create New Script" to add one.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = scripts.map(script => {
+        const whenToRunLabels = {
+            'on_site_open': 'On Site Open',
+            'navigating_in': 'Navigating In',
+            'navigating_out': 'Navigating Out'
+        };
+        
+        const options = [];
+        if (script.onRefresh) options.push('On Refresh');
+        if (script.confirmPopup) options.push('Confirm Popup');
+        const optionsText = options.length > 0 ? ` • ${options.join(', ')}` : '';
+        
+        return `
+            <div class="global-script-item" data-script-id="${script.id}">
+                <div class="global-script-item-header">
+                    <div>
+                        <h3 style="margin: 0; font-size: 16px; color: #333;">${escapeHtml(script.name)}</h3>
+                        <p style="margin: 4px 0 0 0; font-size: 12px; color: #666;">
+                            ${whenToRunLabels[script.whenToRun] || script.whenToRun} • Pattern: <code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 11px;">${escapeHtml(script.domainPattern)}</code>${optionsText}
+                        </p>
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="edit-global-script-btn" data-script-id="${script.id}" style="padding: 8px 16px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">Edit</button>
+                        <button type="button" class="delete-global-script-btn" data-script-id="${script.id}" style="padding: 8px 16px; background: #ff4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px;">Delete</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Add event listeners
+    container.querySelectorAll('.edit-global-script-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const scriptId = btn.getAttribute('data-script-id');
+            await openGlobalScriptModal(scriptId);
+        });
+    });
+    
+    container.querySelectorAll('.delete-global-script-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const scriptId = btn.getAttribute('data-script-id');
+            if (confirm('Are you sure you want to delete this global script?')) {
+                const scripts = await getGlobalScripts();
+                const filtered = scripts.filter(s => s.id !== scriptId);
+                await saveGlobalScripts(filtered);
+                renderGlobalScripts();
+            }
+        });
+    });
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Open global script modal for create or edit
+async function openGlobalScriptModal(scriptId = null) {
+    const modal = document.getElementById('globalScriptModal');
+    const form = document.getElementById('globalScriptForm');
+    const title = document.getElementById('globalScriptModalTitle');
+    const deleteBtn = document.getElementById('deleteGlobalScriptBtn');
+    const codeContainer = document.getElementById('globalScriptsCodeContainer');
+    
+    if (!modal) {
+        console.error('globalScriptModal not found');
+        return;
+    }
+    if (!form) {
+        console.error('globalScriptForm not found');
+        return;
+    }
+    if (!codeContainer) {
+        console.error('globalScriptsCodeContainer not found');
+        return;
+    }
+    
+    // Reset form
+    form.reset();
+    globalScriptCodeCounter = 0;
+    codeContainer.innerHTML = '';
+    
+    if (scriptId) {
+        // Edit mode
+        if (title) {
+            title.textContent = 'Edit Global Script';
+        }
+        if (deleteBtn) {
+            deleteBtn.style.display = 'block';
+        }
+        
+        const scripts = await getGlobalScripts();
+        const script = scripts.find(s => s.id === scriptId);
+        
+        if (script) {
+            const scriptIdInput = document.getElementById('globalScriptId');
+            const nameInput = document.getElementById('globalScriptName');
+            const whenToRunInput = document.getElementById('globalScriptWhenToRun');
+            const domainPatternInput = document.getElementById('globalScriptDomainPattern');
+            const onRefreshCheckbox = document.getElementById('globalScriptOnRefresh');
+            const confirmPopupCheckbox = document.getElementById('globalScriptConfirmPopup');
+            
+            if (scriptIdInput) scriptIdInput.value = script.id;
+            if (nameInput) nameInput.value = script.name;
+            if (whenToRunInput) whenToRunInput.value = script.whenToRun;
+            if (domainPatternInput) domainPatternInput.value = script.domainPattern;
+            if (onRefreshCheckbox) onRefreshCheckbox.checked = script.onRefresh || false;
+            if (confirmPopupCheckbox) confirmPopupCheckbox.checked = script.confirmPopup || false;
+            
+            // Add script code blocks
+            if (script.scripts && script.scripts.length > 0) {
+                script.scripts.forEach(scriptCode => {
+                    codeContainer.appendChild(createGlobalScriptCodeItem(scriptCode));
+                });
+            } else {
+                codeContainer.appendChild(createGlobalScriptCodeItem());
+            }
+        }
+    } else {
+        // Create mode
+        if (title) {
+            title.textContent = 'Create Global Script';
+        }
+        if (deleteBtn) {
+            deleteBtn.style.display = 'none';
+        }
+        codeContainer.appendChild(createGlobalScriptCodeItem());
+    }
+    
+    // Force modal to be visible
+    modal.classList.add('active');
+    modal.style.display = 'flex';
+    modal.style.visibility = 'visible';
+    modal.style.opacity = '1';
+    modal.style.zIndex = '1000';
+    modal.style.pointerEvents = 'auto';
+    
+    // Force a reflow to ensure styles are applied
+    void modal.offsetWidth;
+}
+
+
+// Setup global scripts page
+function setupGlobalScriptsPage() {
+    const createBtn = document.getElementById('createScriptBtn');
+    const modal = document.getElementById('globalScriptModal');
+    const form = document.getElementById('globalScriptForm');
+    const cancelBtn = document.getElementById('cancelGlobalScriptBtn');
+    const deleteBtn = document.getElementById('deleteGlobalScriptBtn');
+    const addCodeBtn = document.getElementById('addGlobalScriptCodeBtn');
+    const codeContainer = document.getElementById('globalScriptsCodeContainer');
+    const whenToRunSelect = document.getElementById('globalScriptWhenToRun');
+    
+    if (!createBtn) {
+        console.error('createScriptBtn not found');
+        return;
+    }
+    if (!modal) {
+        console.error('globalScriptModal not found');
+        return;
+    }
+    if (!form) {
+        console.error('globalScriptForm not found');
+        return;
+    }
+    
+    // Create button - check if listener already attached
+    if (!createBtn.dataset.listenerAttached) {
+        createBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openGlobalScriptModal();
+        });
+        createBtn.dataset.listenerAttached = 'true';
+    }
+    
+    
+    // Helper function to close modal
+    const closeModal = () => {
+        modal.classList.remove('active');
+        // Clear inline styles
+        modal.style.display = '';
+        modal.style.visibility = '';
+        modal.style.opacity = '';
+        modal.style.zIndex = '';
+        modal.style.pointerEvents = '';
+        form.reset();
+        globalScriptCodeCounter = 0;
+        if (codeContainer) {
+            codeContainer.innerHTML = '';
+        }
+    };
+    
+    // Cancel button
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            closeModal();
+        });
+    }
+    
+    // Close on backdrop click
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            e.preventDefault();
+            e.stopPropagation();
+            closeModal();
+        }
+    });
+    
+    // Add code block button
+    if (addCodeBtn && codeContainer) {
+        addCodeBtn.addEventListener('click', () => {
+            codeContainer.appendChild(createGlobalScriptCodeItem());
+        });
+    }
+    
+    // Delete button
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', async () => {
+            const scriptId = document.getElementById('globalScriptId')?.value;
+            if (!scriptId) return;
+            
+            if (confirm('Are you sure you want to delete this global script?')) {
+                const scripts = await getGlobalScripts();
+                const filtered = scripts.filter(s => s.id !== scriptId);
+                await saveGlobalScripts(filtered);
+                closeModal();
+                renderGlobalScripts();
+            }
+        });
+    }
+    
+    // Form submission - check if listener already attached
+    if (!form.dataset.submitListenerAttached) {
+        form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const scriptId = document.getElementById('globalScriptId').value;
+        const name = document.getElementById('globalScriptName').value.trim();
+        const whenToRun = document.getElementById('globalScriptWhenToRun').value;
+        const domainPattern = document.getElementById('globalScriptDomainPattern').value.trim();
+        const onRefresh = document.getElementById('globalScriptOnRefresh').checked;
+        const confirmPopup = document.getElementById('globalScriptConfirmPopup').checked;
+        
+        if (!name || !whenToRun || !domainPattern) {
+            alert('Please fill in all required fields');
+            return;
+        }
+        
+        // Validate domain pattern (basic validation for wildcard patterns with optional paths)
+        if (!domainPattern || domainPattern.trim().length === 0) {
+            alert('Please enter a domain pattern.');
+            return;
+        }
+        
+        // Split pattern into domain and path parts
+        const [domainPart, ...pathParts] = domainPattern.split('/');
+        const pathPart = pathParts.length > 0 ? '/' + pathParts.join('/') : '';
+        
+        // Validate domain part: should contain at least one dot or be a valid domain-like pattern
+        // Allow wildcards anywhere in the domain (e.g., some*.example.com)
+        const domainPatternRegex = /^([a-zA-Z0-9*]([a-zA-Z0-9-*]*[a-zA-Z0-9*])?\.)*[a-zA-Z0-9*]([a-zA-Z0-9-*]*[a-zA-Z0-9*])?$/;
+        if (!domainPatternRegex.test(domainPart)) {
+            alert('Invalid domain pattern. Please use a valid domain format like "example.com", "*.example.com", "some*.example.com", or "some.example.com/auth/login".');
+            return;
+        }
+        
+        // Validate path part if present (should start with / and contain valid path characters)
+        if (pathPart && !/^\/[a-zA-Z0-9\-_\/\.]*$/.test(pathPart)) {
+            alert('Invalid path in domain pattern. Path should start with / and contain only letters, numbers, hyphens, underscores, dots, and slashes.');
+            return;
+        }
+        
+        // Collect script code blocks
+        const codeItems = codeContainer.querySelectorAll('.global-script-code-item');
+        const scripts = [];
+        codeItems.forEach(item => {
+            const codeId = item.dataset.codeId;
+            const timing = item.querySelector('.script-code-timing-select').value;
+            const code = item.querySelector('.script-code-textarea').value.trim();
+            
+            if (code) {
+                scripts.push({
+                    timing,
+                    code
+                });
+            }
+        });
+        
+        if (scripts.length === 0) {
+            alert('Please add at least one script code block');
+            return;
+        }
+        
+        const globalScripts = await getGlobalScripts();
+        
+        if (scriptId) {
+            // Update existing
+            const index = globalScripts.findIndex(s => s.id === scriptId);
+            if (index !== -1) {
+                const existingScript = globalScripts[index];
+                const updatedScript = {
+                    ...existingScript, // Preserve any existing properties
+                    id: scriptId,
+                    name,
+                    whenToRun,
+                    domainPattern,
+                    onRefresh: onRefresh || false,
+                    confirmPopup: confirmPopup || false,
+                    scripts
+                };
+                globalScripts[index] = updatedScript;
+            }
+        } else {
+            // Create new
+            const newScript = {
+                id: Date.now().toString(),
+                name,
+                whenToRun,
+                domainPattern,
+                onRefresh: onRefresh || false,
+                confirmPopup: confirmPopup || false,
+                scripts,
+                createdAt: Date.now()
+            };
+            globalScripts.push(newScript);
+        }
+        
+        await saveGlobalScripts(globalScripts);
+        closeModal();
+        renderGlobalScripts();
+        });
+        form.dataset.submitListenerAttached = 'true';
+    }
+    
+    // Render scripts when scripts page is shown
+    const scriptsPage = document.getElementById('scriptsPage');
+    if (scriptsPage) {
+        const observer = new MutationObserver((mutations) => {
+            if (scriptsPage.classList.contains('active')) {
+                renderGlobalScripts();
+            }
+        });
+        observer.observe(scriptsPage, {
+            attributes: true,
+            attributeFilter: ['class']
+        });
+    }
+}
+
+// Initialize global scripts page
+// Try to initialize immediately, and also when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        setupGlobalScriptsPage();
+    });
+} else {
+    // DOM is already ready
+    setupGlobalScriptsPage();
+}
+
+// Also re-initialize when scripts page becomes visible (in case elements weren't ready)
+const scriptsPage = document.getElementById('scriptsPage');
+if (scriptsPage) {
+    const observer = new MutationObserver((mutations) => {
+        if (scriptsPage.classList.contains('active')) {
+            // Re-check if button exists and has listener
+            const createBtn = document.getElementById('createScriptBtn');
+            if (createBtn && !createBtn.dataset.listenerAttached) {
+                createBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openGlobalScriptModal();
+                });
+                createBtn.dataset.listenerAttached = 'true';
+            }
+        }
+    });
+    observer.observe(scriptsPage, {
+        attributes: true,
+        attributeFilter: ['class']
+    });
+}
 
 // Load theme and icon size, then initial render
 loadTheme();

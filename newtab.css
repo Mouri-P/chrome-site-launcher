@@ -40,7 +40,7 @@ ntp-modules,
 #mv-tiles,
 #most-visited,
 #mv-single,
-body > *:not(.launchpad-container):not(.button-group-container):not(.add-button-container):not(.theme-button-container):not(#addSiteModal):not(#editSiteModal):not(#themeModal):not(#advancedScriptsModal):not(script) {
+body > *:not(.launchpad-container):not(.button-group-container):not(.add-button-container):not(.theme-button-container):not(#addSiteModal):not(#editSiteModal):not(#themeModal):not(#advancedScriptsModal):not(#globalScriptModal):not(script) {
     display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;
@@ -653,6 +653,106 @@ footer {
     box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
 }
 
+/* Global Scripts Styles */
+.scripts-content {
+    line-height: 1.6;
+}
+
+.global-script-item {
+    background: #f8f9fa;
+    border: 2px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.global-script-item:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+}
+
+.global-script-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.global-script-item-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #333;
+}
+
+.global-script-item-header p {
+    margin: 4px 0 0 0;
+    font-size: 12px;
+    color: #666;
+}
+
+.global-script-item-header code {
+    background: #f0f0f0;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+}
+
+.global-script-code-item {
+    background: #f8f9fa;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 15px;
+    position: relative;
+}
+
+.script-code-item-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.script-code-item-header label {
+    font-weight: 600;
+    color: #333;
+    font-size: 13px;
+}
+
+.remove-script-code-btn {
+    background: #ff4444;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.remove-script-code-btn:hover {
+    background: #cc0000;
+    transform: translateY(-1px);
+}
+
+.script-code-timing-select {
+    width: 100%;
+    padding: 10px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 10px;
+    background: white;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+}
+
+.script-code-timing-select:focus {
+    outline: none;
+    border-color: #667eea;
+}
 
 /* Modal Styles */
 .modal {
@@ -675,6 +775,13 @@ footer {
 
 #advancedScriptsModal.active {
     display: flex !important;
+}
+
+#globalScriptModal.active {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 1001 !important;
 }
 
 .modal-content {

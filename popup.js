@@ -24,17 +24,16 @@ function getFaviconUrls(url) {
         const origin = parsedUrl.origin;
         
         return [
-            // `${origin}/favicon.ico`,
-            // `${origin}/favicon.png`,
-            // `${origin}/apple-touch-icon.png`,
-            // `${origin}/apple-touch-icon-precomposed.png`,
-            // `${origin}/favicon-32x32.png`,
-            // `${origin}/favicon-16x16.png`,
-            // `${origin}/icon.png`,
-            // `${origin}/icons/favicon.ico`,
-            // `${origin}/icons/favicon.png`,
-            // Google's favicon service as last resort before SVG
-            `https://www.google.com/s2/favicons?domain=${parsedUrl.hostname}&sz=128`
+            `https://www.google.com/s2/favicons?domain=${parsedUrl.hostname}&sz=128`,
+            `${origin}/icon.png`,
+            `${origin}/apple-touch-icon.png`,
+            `${origin}/apple-touch-icon-precomposed.png`,
+            `${origin}/favicon-32x32.png`,
+            `${origin}/favicon-16x16.png`,
+            `${origin}/favicon.ico`,
+            `${origin}/favicon.png`,
+            `${origin}/icons/favicon.ico`,
+            `${origin}/icons/favicon.png`,
         ];
     } catch (e) {
         return [];

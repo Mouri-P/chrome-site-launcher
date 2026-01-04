@@ -47,15 +47,15 @@
             <form id="addSiteForm">
                 <div class="form-group">
                     <label for="siteName">Name</label>
-                    <input type="text" id="siteName" required placeholder="e.g., Google">
+                    <input type="text" id="siteName" name="siteName" required placeholder="e.g., Google">
                 </div>
                 <div class="form-group">
                     <label for="siteUrl">URL</label>
-                    <input type="url" id="siteUrl" required placeholder="https://example.com">
+                    <input type="url" id="siteUrl" name="siteUrl" required placeholder="https://example.com">
                 </div>
                 <div class="form-group">
                     <label for="siteIconUrl">Icon URL (optional)</label>
-                    <input type="url" id="siteIconUrl" placeholder="https://example.com/icon.png">
+                    <input type="url" id="siteIconUrl" name="siteIconUrl" placeholder="https://example.com/icon.png">
                     <small style="display: block; margin-top: 4px; color: #666; font-size: 12px;">Leave blank to use automatic favicon</small>
                 </div>
                 <div class="form-actions">
@@ -100,6 +100,13 @@
                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                         </svg>
                         <span>Edit Sites</span>
+                    </button>
+                    <button class="settings-nav-item" data-page="scripts">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="16 18 22 12 16 6"></polyline>
+                            <polyline points="8 6 2 12 8 18"></polyline>
+                        </svg>
+                        <span>Scripts</span>
                     </button>
                 </div>
             </div>
@@ -208,7 +215,7 @@
 
                             <div class="form-group" style="margin-top: 15px;">
                                 <label for="importFile">Select JSON file</label>
-                                <input type="file" id="importFile" accept=".json,application/json" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; margin-top: 8px;">
+                                <input type="file" id="importFile" name="importFile" accept=".json,application/json" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; margin-top: 8px;">
                             </div>
 
                             <button id="importBtn" class="btn-submit" style="width: 100%; margin-top: 15px;" disabled>
@@ -233,7 +240,7 @@
                         
                         <div class="form-group" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e0e0e0;">
                             <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 0;">
-                                <input type="checkbox" id="showEditOnHover" style="width: auto; margin: 0; cursor: pointer;">
+                                <input type="checkbox" id="showEditOnHover" name="showEditOnHover" style="width: auto; margin: 0; cursor: pointer;">
                                 <span style="font-weight: 500;">Show edit options on hover</span>
                             </label>
                             <small style="display: block; margin-top: 8px; color: #666; font-size: 12px; margin-left: 28px;">
@@ -260,12 +267,32 @@
                     </div>
                 </div>
 
+                <!-- Scripts Page -->
+                <div id="scriptsPage" class="settings-page">
+                    <h2>Global Scripts</h2>
+                    <div class="scripts-content">
+                        <p style="margin-bottom: 20px; color: #666;">Create global scripts that run automatically on matching domains. Scripts can trigger on site open, navigation in, or navigation out.</p>
+                        
+                        <button id="createScriptBtn" class="btn-submit" style="width: 100%; margin-bottom: 30px;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Create New Script
+                        </button>
+                        
+                        <div id="globalScriptsContainer">
+                            <!-- Global scripts will be dynamically added here -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Theme Page -->
                 <div id="themePage" class="settings-page">
                     <h2>Customize Theme</h2>
                     <form id="themeForm">
                         <div class="form-group">
-                            <label>Background Type</label>
+                            <h3 style="margin-bottom: 8px; color: #555; font-weight: 500; font-size: 14px;">Background Type</h3>
                             <div class="radio-group">
                                 <label class="radio-label">
                                     <input type="radio" name="bgType" value="color" checked>
@@ -291,13 +318,13 @@
                                     <button type="button" class="color-preset" data-color="#2d2d2d" style="background: #2d2d2d;"></button>
                                     <button type="button" class="color-preset" data-color="#0a0a0a" style="background: #0a0a0a;"></button>
                                 </div>
-                                <input type="color" id="bgColor" value="#ffffff">
+                                <input type="color" id="bgColor" name="bgColor" value="#ffffff">
                             </div>
                         </div>
 
                         <div id="imageOptions" class="theme-options" style="display: none;">
                             <div class="form-group">
-                                <label>Your Uploaded Images</label>
+                                <h3 style="margin-bottom: 8px; color: #555; font-weight: 500; font-size: 14px;">Your Uploaded Images</h3>
                                 <div class="image-presets" id="defaultImages">
                                     <!-- Will be populated by JS with user-uploaded images -->
                                 </div>
@@ -305,12 +332,12 @@
                             </div>
                             <div class="form-group">
                                 <label for="localImage">Upload Image</label>
-                                <input type="file" id="localImage" accept="image/*">
+                                <input type="file" id="localImage" name="localImage" accept="image/*">
                                 <small style="display: block; margin-top: 4px; color: #666; font-size: 12px;">Uploaded images are stored locally on your device</small>
                             </div>
                             <div class="form-group">
                                 <label for="imageUrl">Or Use Image URL</label>
-                                <input type="url" id="imageUrl" placeholder="https://example.com/image.jpg">
+                                <input type="url" id="imageUrl" name="imageUrl" placeholder="https://example.com/image.jpg">
                                 <small style="display: block; margin-top: 4px; color: #666; font-size: 12px;">Enter a direct link to an image</small>
                             </div>
                         </div>
@@ -325,7 +352,7 @@
                                 <span>Icon Size</span>
                             </label>
                             <div style="display: flex; align-items: center; gap: 15px; margin-top: 10px; padding: 15px; background: #f8f9fa; border-radius: 12px; border: 1px solid #e0e0e0;">
-                                <input type="range" id="iconSize" min="60" max="150" value="100" step="5" style="flex: 1;">
+                                <input type="range" id="iconSize" name="iconSize" min="60" max="150" value="100" step="5" style="flex: 1;">
                                 <div style="display: flex; align-items: center; gap: 8px; min-width: 70px; justify-content: flex-end;">
                                     <span id="iconSizeValue" style="font-weight: 700; color: #667eea; font-size: 16px; letter-spacing: 0.5px;">100px</span>
                                 </div>
@@ -348,18 +375,18 @@
         <div class="modal-content">
             <h2>Edit Site</h2>
             <form id="editSiteForm">
-                <input type="hidden" id="editSiteId">
+                <input type="hidden" id="editSiteId" name="editSiteId">
                 <div class="form-group">
                     <label for="editSiteName">Name</label>
-                    <input type="text" id="editSiteName" required>
+                    <input type="text" id="editSiteName" name="editSiteName" required>
                 </div>
                 <div class="form-group">
                     <label for="editSiteUrl">URL</label>
-                    <input type="url" id="editSiteUrl" required>
+                    <input type="url" id="editSiteUrl" name="editSiteUrl" required>
                 </div>
                 <div class="form-group">
                     <label for="editSiteIconUrl">Icon URL (optional)</label>
-                    <input type="url" id="editSiteIconUrl" placeholder="https://example.com/icon.png">
+                    <input type="url" id="editSiteIconUrl" name="editSiteIconUrl" placeholder="https://example.com/icon.png">
                     <small style="display: block; margin-top: 4px; color: #666; font-size: 12px;">Leave blank to use automatic favicon</small>
                 </div>
                 <div class="form-actions">
@@ -378,7 +405,7 @@
             <h2>Advanced Scripts</h2>
             <p style="margin-bottom: 20px; color: #666; font-size: 14px;">Add custom JavaScript scripts to be injected when this site is opened. Scripts will execute based on the timing you select.</p>
             <form id="advancedScriptsForm">
-                <input type="hidden" id="advancedSiteId">
+                <input type="hidden" id="advancedSiteId" name="advancedSiteId">
                 <div id="scriptsContainer">
                     <!-- Scripts will be dynamically added here -->
                 </div>
@@ -394,6 +421,85 @@
                 <div class="form-actions" style="margin-top: 25px;">
                     <button type="button" id="cancelAdvancedBtn" class="btn-cancel">Cancel</button>
                     <button type="submit" class="btn-submit">Save Scripts</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Global Script Modal -->
+    <div id="globalScriptModal" class="modal">
+        <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+            <h2 id="globalScriptModalTitle">Create Global Script</h2>
+            <form id="globalScriptForm">
+                <input type="hidden" id="globalScriptId" name="globalScriptId">
+                
+                <div class="form-group">
+                    <label for="globalScriptName">Script Name</label>
+                    <input type="text" id="globalScriptName" name="globalScriptName" required placeholder="e.g., Auto Login for Keycloak">
+                    <small style="display: block; margin-top: 4px; color: #666; font-size: 12px;">A unique name to identify this script</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="globalScriptWhenToRun">When to Run</label>
+                    <select id="globalScriptWhenToRun" name="globalScriptWhenToRun" required style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 14px;">
+                        <option value="on_site_open">On Site Open</option>
+                        <option value="navigating_in">Navigating In</option>
+                        <option value="navigating_out">Navigating Out</option>
+                    </select>
+                    <small style="display: block; margin-top: 4px; color: #666; font-size: 12px;">
+                        <strong>On Site Open:</strong> Runs when a matching site is opened from the launcher<br>
+                        <strong>Navigating In:</strong> Runs when navigating to a matching domain<br>
+                        <strong>Navigating Out:</strong> Runs when navigating away from a matching domain
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="globalScriptOnRefresh" name="globalScriptOnRefresh" style="width: 18px; height: 18px; cursor: pointer;">
+                        <span style="font-weight: 500; color: #555;">On Refresh</span>
+                    </label>
+                    <small style="display: block; margin-top: 4px; margin-left: 28px; color: #666; font-size: 12px;">
+                        Runs only when the page is refreshed (F5 or reload)
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="globalScriptConfirmPopup" name="globalScriptConfirmPopup" style="width: 18px; height: 18px; cursor: pointer;">
+                        <span style="font-weight: 500; color: #555;">Confirm Popup</span>
+                    </label>
+                    <small style="display: block; margin-top: 4px; margin-left: 28px; color: #666; font-size: 12px;">
+                        Shows a confirmation popup before executing the script. Press Enter to confirm or Esc to cancel.
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="globalScriptDomainPattern">Domain Pattern</label>
+                    <input type="text" id="globalScriptDomainPattern" name="globalScriptDomainPattern" required placeholder="e.g., auth.example.com, *.example.com, some.example.com/auth/login, or some*.example.com">
+                    <small style="display: block; margin-top: 4px; color: #666; font-size: 12px;">
+                        Domain pattern to match. Use <code style="background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">*</code> as a wildcard. Can include paths. Examples: <code style="background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">auth.example.com</code>, <code style="background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">*.example.com</code>, <code style="background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">some.example.com/auth/login</code>, or <code style="background: #f0f0f0; padding: 2px 4px; border-radius: 3px;">some*.example.com</code>
+                    </small>
+                </div>
+                
+                <div class="form-group">
+                    <h3 style="margin-bottom: 8px; color: #555; font-weight: 500; font-size: 14px;">Scripts</h3>
+                    <div id="globalScriptsCodeContainer">
+                        <!-- Script code blocks will be added here -->
+                    </div>
+                    <button type="button" id="addGlobalScriptCodeBtn" class="btn-add-script" style="margin-top: 10px;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle; margin-right: 6px;">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add Script Code Block
+                    </button>
+                </div>
+                
+                <div class="form-actions" style="margin-top: 25px;">
+                    <button type="button" id="deleteGlobalScriptBtn" class="btn-delete" style="display: none;">Delete Script</button>
+                    <div style="flex: 1;"></div>
+                    <button type="button" id="cancelGlobalScriptBtn" class="btn-cancel">Cancel</button>
+                    <button type="submit" class="btn-submit">Save Script</button>
                 </div>
             </form>
         </div>
