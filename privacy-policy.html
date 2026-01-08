@@ -126,8 +126,27 @@
             <li><strong>tabs:</strong> To get the current page information when you add a site via the popup</li>
             <li><strong>activeTab:</strong> To access the current page title and URL when adding sites</li>
             <li><strong>topSites:</strong> To import your frequently visited sites (only when you explicitly click the import button)</li>
+            <li><strong>scripting:</strong> To inject user-defined scripts into websites (only when you explicitly configure scripts for specific sites)</li>
+            <li><strong>host_permissions (<all_urls>):</strong> This broad permission is required to:
+                <ul>
+                    <li>Fetch favicons from any website you add to your launcher</li>
+                    <li>Inject user-defined scripts into websites (only when you explicitly configure scripts for specific sites)</li>
+                    <li>Access website content to execute scripts you've configured</li>
+                </ul>
+                <strong>Important:</strong> The extension only uses this permission when you explicitly configure scripts for a site. It does not automatically inject scripts or access website content without your explicit configuration.
+            </li>
         </ul>
         <p>These permissions are used only for the stated purposes and nothing else.</p>
+        
+        <h2>4.1. Script Injection Feature</h2>
+        <p>Site Launcher includes an advanced feature that allows you to inject custom JavaScript code into specific websites. This feature:</p>
+        <ul>
+            <li>Is <strong>opt-in only</strong> - scripts are only executed when you explicitly configure them for a specific site</li>
+            <li>Requires your explicit action - you must manually add and configure scripts in the extension's settings</li>
+            <li>Includes safety features - you can enable a confirmation popup before scripts execute</li>
+            <li>Is stored locally - all scripts are stored on your device and never transmitted to any server</li>
+        </ul>
+        <p><strong>Warning:</strong> Injecting scripts into websites can modify website behavior and may violate website terms of service. Use this feature responsibly and only on websites where you have permission to do so. Site Launcher is not responsible for any consequences resulting from script injection.</p>
 
         <h2>5. Third-Party Links</h2>
         <p>When you click on a site icon, you navigate directly to that website. We don't track which sites you visit or how often you visit them.</p>

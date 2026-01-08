@@ -10,7 +10,8 @@ A beautiful Mac Launchpad-style interface for launching your favorite websites. 
 🎨 **Auto Icons** - Automatically fetches site favicons or creates beautiful fallbacks  
 ✏️ **Edit & Delete** - Click the edit button on any icon to modify or remove sites  
 🎨 **Customizable Themes** - Choose from colors or upload your own background images  
-📥 **Import/Export** - Backup your sites or import from Chrome's frequently visited sites
+📥 **Import/Export** - Backup your sites or import from Chrome's frequently visited sites  
+⚡ **Advanced Scripts** - Inject custom JavaScript into specific websites (opt-in feature)
 
 ## Installation
 
@@ -57,6 +58,17 @@ Open a new tab and you'll see your Site Launcher! The extension uses website fav
 - **Import Sites**: Import from Chrome's frequently visited sites or from a JSON backup file
 - **Export Sites**: Export your sites as JSON for backup or sharing
 
+### Advanced Scripts (Optional)
+
+Site Launcher includes an advanced feature that allows you to inject custom JavaScript into specific websites. This feature is opt-in only and requires explicit configuration:
+
+- **Site-Specific Scripts**: Click the advanced icon (ℹ️) on any site to add custom scripts that run when you visit that site
+- **Global Scripts**: Configure scripts that run on multiple websites matching a domain pattern
+- **Safety Features**: Enable confirmation popups before scripts execute
+- **Timing Control**: Choose when scripts execute (document_start, document_end, or document_idle)
+
+**⚠️ Warning:** Injecting scripts into websites can modify website behavior and may violate website terms of service. Use this feature responsibly and only on websites where you have permission to do so.
+
 ## Technical Details
 
 ### Files Structure
@@ -88,6 +100,11 @@ Sites are stored locally using Chrome's `chrome.storage.local` API. Your data is
 - `storage` - To save your sites locally
 - `tabs` - To get current tab information when adding sites
 - `activeTab` - To access the current page title and URL
+- `topSites` - To import your frequently visited sites (only when you explicitly click import)
+- `scripting` - To inject user-defined scripts into websites (only when you explicitly configure scripts)
+- `host_permissions (<all_urls>)` - Required to fetch favicons from any website and inject scripts (only when explicitly configured)
+
+**Note:** The `<all_urls>` permission is required for the favicon fetching and script injection features. Scripts are only executed when you explicitly configure them for a specific site. The extension does not automatically inject scripts or access website content without your explicit configuration.
 
 ## Customization
 
