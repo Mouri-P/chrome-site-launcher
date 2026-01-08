@@ -40,7 +40,7 @@ ntp-modules,
 #mv-tiles,
 #most-visited,
 #mv-single,
-body > *:not(.launchpad-container):not(.button-group-container):not(.add-button-container):not(.theme-button-container):not(#addSiteModal):not(#editSiteModal):not(#themeModal):not(#advancedScriptsModal):not(#globalScriptModal):not(script) {
+body > *:not(.launchpad-container):not(.button-group-container):not(.add-button-container):not(.theme-button-container):not(#addSiteModal):not(#editSiteModal):not(#themeModal):not(#advancedScriptsModal):not(#globalScriptModal):not(#subLauncherModal):not(script) {
     display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;
@@ -542,6 +542,51 @@ footer {
     color: white;
 }
 
+/* Down arrow for parent sites */
+.down-arrow-icon {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 10%;
+    min-height: 20px;
+    background: rgba(128, 128, 128, 0.3);
+    backdrop-filter: blur(10px);
+    border-radius: 0 0 22px 22px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 15;
+    transition: all 0.2s ease;
+    pointer-events: none;
+    opacity: 0;
+    box-sizing: border-box;
+}
+
+.site-item:hover .down-arrow-icon {
+    display: flex;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.down-arrow-icon:hover {
+    background: rgba(128, 128, 128, 0.5);
+}
+
+.down-arrow-icon svg {
+    width: 18px;
+    height: 18px;
+    color: white;
+    display: block;
+    margin: 0 auto;
+    pointer-events: none;
+}
+
+.down-arrow-icon * {
+    pointer-events: none;
+}
+
 .script-item {
     background: #f8f9fa;
     border: 2px solid #e0e0e0;
@@ -773,6 +818,11 @@ footer {
     display: flex !important;
 }
 
+#editSiteModal.active {
+    display: flex !important;
+    z-index: 1002 !important;
+}
+
 #advancedScriptsModal.active {
     display: flex !important;
 }
@@ -785,13 +835,165 @@ footer {
 }
 
 .modal-content {
+    position: relative;
     background: white;
     padding: 30px;
     border-radius: 20px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    max-width: 400px;
+    max-width: 500px;
     width: 90%;
     animation: modalSlideIn 0.3s ease;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 600;
+    color: #333;
+}
+
+.modal-header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: transparent;
+    padding: 0;
+}
+
+.btn-icon:hover {
+    transform: translateY(-1px);
+}
+
+.btn-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.btn-icon-duplicate {
+    color: #2196f3;
+}
+
+.btn-icon-duplicate:hover {
+    background: rgba(33, 150, 243, 0.1);
+}
+
+.btn-icon-delete {
+    color: #f44336;
+}
+
+.btn-icon-delete:hover {
+    background: rgba(244, 67, 54, 0.1);
+}
+
+.sub-launcher-modal-content {
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 50px 40px 40px 40px;
+    position: relative;
+    min-height: 400px;
+}
+
+#subLauncherGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--icon-size, 120px), var(--icon-size, 120px)));
+    gap: 30px;
+    justify-content: center;
+    max-width: 1200px;
+    width: 100%;
+    align-content: start;
+}
+
+.modal-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    color: #333;
+    z-index: 1001;
+}
+
+.modal-close-btn:hover {
+    background: white;
+    transform: scale(1.1);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+}
+
+.modal-close-btn:active {
+    transform: scale(0.95);
+}
+
+.modal-close-btn svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Legacy class for backward compatibility */
+.sub-launcher-close-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+    color: #333;
+    z-index: 1001;
+}
+
+.sub-launcher-close-btn:hover {
+    background: white;
+    transform: scale(1.1);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+}
+
+.sub-launcher-close-btn:active {
+    transform: scale(0.95);
+}
+
+.sub-launcher-close-btn svg {
+    width: 20px;
+    height: 20px;
 }
 
 .settings-modal-content {
@@ -951,11 +1153,6 @@ footer {
     }
 }
 
-.modal-content h2 {
-    margin-bottom: 20px;
-    color: #333;
-    font-size: 24px;
-}
 
 .form-group {
     margin-bottom: 20px;
@@ -989,7 +1186,7 @@ footer {
     margin-top: 25px;
 }
 
-.btn-cancel, .btn-submit, .btn-delete {
+.btn-cancel, .btn-submit, .btn-delete, .btn-duplicate {
     padding: 12px 24px;
     border: none;
     border-radius: 10px;
@@ -1028,6 +1225,17 @@ footer {
     background: #cc0000;
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(255, 68, 68, 0.4);
+}
+
+.btn-duplicate {
+    background: #2196f3;
+    color: white;
+}
+
+.btn-duplicate:hover {
+    background: #1976d2;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
 }
 
 .empty-state {

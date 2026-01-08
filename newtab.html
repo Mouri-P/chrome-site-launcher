@@ -42,21 +42,36 @@
 
     <!-- Add Site Modal -->
     <div id="addSiteModal" class="modal">
+        <button type="button" class="modal-close-btn" data-modal="addSiteModal" title="Close (Esc)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
         <div class="modal-content">
             <h2>Add New Site</h2>
             <form id="addSiteForm">
                 <div class="form-group">
                     <label for="siteName">Name</label>
                     <input type="text" id="siteName" name="siteName" required placeholder="e.g., Google">
+                    <div class="error-message" id="siteNameError" style="display: none; margin-top: 4px; color: #ff4444; font-size: 12px;"></div>
                 </div>
                 <div class="form-group">
                     <label for="siteUrl">URL</label>
-                    <input type="url" id="siteUrl" name="siteUrl" required placeholder="https://example.com">
+                    <input type="text" id="siteUrl" name="siteUrl" required placeholder="google.com or https://example.com">
+                    <div class="error-message" id="siteUrlError" style="display: none; margin-top: 4px; color: #ff4444; font-size: 12px;"></div>
                 </div>
                 <div class="form-group">
                     <label for="siteIconUrl">Icon URL (optional)</label>
                     <input type="url" id="siteIconUrl" name="siteIconUrl" placeholder="https://example.com/icon.png">
                     <small style="display: block; margin-top: 4px; color: #666; font-size: 12px;">Leave blank to use automatic favicon</small>
+                </div>
+                <div class="form-group">
+                    <label for="siteParent">Parent Site (optional)</label>
+                    <select id="siteParent" name="siteParent" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 14px;">
+                        <option value="">None (Parent Icon)</option>
+                    </select>
+                    <small style="display: block; margin-top: 4px; color: #666; font-size: 12px;">Select a parent site to make this a sub-site, or leave as "None" to make it a parent</small>
                 </div>
                 <div class="form-actions">
                     <button type="button" id="cancelBtn" class="btn-cancel">Cancel</button>
@@ -68,6 +83,12 @@
 
     <!-- Settings Modal -->
     <div id="themeModal" class="modal">
+        <button type="button" class="modal-close-btn" data-modal="themeModal" title="Close (Esc)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
         <div class="modal-content settings-modal-content">
             <div class="settings-sidebar">
                 <div class="settings-nav">
@@ -372,25 +393,55 @@
 
     <!-- Edit Site Modal -->
     <div id="editSiteModal" class="modal">
+        <button type="button" class="modal-close-btn" data-modal="editSiteModal" title="Close (Esc)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
         <div class="modal-content">
-            <h2>Edit Site</h2>
+            <div class="modal-header">
+                <h2>Edit Site</h2>
+                <div class="modal-header-actions">
+                    <button type="button" id="duplicateSiteBtn" class="btn-icon btn-icon-duplicate" title="Duplicate">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                    </button>
+                    <button type="button" id="deleteSiteBtn" class="btn-icon btn-icon-delete" title="Delete">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
             <form id="editSiteForm">
                 <input type="hidden" id="editSiteId" name="editSiteId">
                 <div class="form-group">
                     <label for="editSiteName">Name</label>
                     <input type="text" id="editSiteName" name="editSiteName" required>
+                    <div class="error-message" id="editSiteNameError" style="display: none; margin-top: 4px; color: #ff4444; font-size: 12px;"></div>
                 </div>
                 <div class="form-group">
                     <label for="editSiteUrl">URL</label>
-                    <input type="url" id="editSiteUrl" name="editSiteUrl" required>
+                    <input type="text" id="editSiteUrl" name="editSiteUrl" required placeholder="google.com or https://example.com">
+                    <div class="error-message" id="editSiteUrlError" style="display: none; margin-top: 4px; color: #ff4444; font-size: 12px;"></div>
                 </div>
                 <div class="form-group">
                     <label for="editSiteIconUrl">Icon URL (optional)</label>
                     <input type="url" id="editSiteIconUrl" name="editSiteIconUrl" placeholder="https://example.com/icon.png">
                     <small style="display: block; margin-top: 4px; color: #666; font-size: 12px;">Leave blank to use automatic favicon</small>
                 </div>
+                <div class="form-group">
+                    <label for="editSiteParent">Parent Site (optional)</label>
+                    <select id="editSiteParent" name="editSiteParent" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 14px;">
+                        <option value="">None (Parent Icon)</option>
+                    </select>
+                    <small style="display: block; margin-top: 4px; color: #666; font-size: 12px;">Select a parent site to make this a sub-site, or leave as "None" to make it a parent</small>
+                </div>
                 <div class="form-actions">
-                    <button type="button" id="deleteSiteBtn" class="btn-delete">Delete</button>
                     <div style="flex: 1;"></div>
                     <button type="button" id="cancelEditBtn" class="btn-cancel">Cancel</button>
                     <button type="submit" class="btn-submit">Save</button>
@@ -401,6 +452,12 @@
 
     <!-- Advanced Scripts Modal -->
     <div id="advancedScriptsModal" class="modal">
+        <button type="button" class="modal-close-btn" data-modal="advancedScriptsModal" title="Close (Esc)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
         <div class="modal-content" style="max-width: 600px;">
             <h2>Advanced Scripts</h2>
             <p style="margin-bottom: 20px; color: #666; font-size: 14px;">Add custom JavaScript scripts to be injected when this site is opened. Scripts will execute based on the timing you select.</p>
@@ -426,8 +483,29 @@
         </div>
     </div>
 
+    <!-- Sub-Launcher Modal -->
+    <div id="subLauncherModal" class="modal">
+        <button type="button" id="closeSubLauncherBtn" class="modal-close-btn" data-modal="subLauncherModal" title="Close (Esc)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+        <div class="modal-content sub-launcher-modal-content">
+            <div id="subLauncherGrid" class="sites-grid" style="max-width: 100%;">
+                <!-- Child sites will be dynamically added here -->
+            </div>
+        </div>
+    </div>
+
     <!-- Global Script Modal -->
     <div id="globalScriptModal" class="modal">
+        <button type="button" class="modal-close-btn" data-modal="globalScriptModal" title="Close (Esc)">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
         <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
             <h2 id="globalScriptModalTitle">Create Global Script</h2>
             <form id="globalScriptForm">

@@ -83,12 +83,20 @@ function getInitial(name) {
     return name.charAt(0).toUpperCase();
 }
 
+// Helper function to check if a site has children
+function hasChildren(siteId, sites) {
+    return sites.some(s => s.parentId === siteId);
+}
+
 // Render sites grid
 async function renderSites() {
     const sites = await getSites();
     const sitesGrid = document.getElementById('sitesGrid');
     
-    if (sites.length === 0) {
+    // Filter to show only parent sites (sites without parentId) in main grid
+    const parentSites = sites.filter(site => !site.parentId);
+    
+    if (parentSites.length === 0) {
         sitesGrid.innerHTML = `
             <div class="empty-state">
                 <h2>Welcome to Site Launcher!</h2>
@@ -103,11 +111,12 @@ async function renderSites() {
     
     const defaultIconUrl = chrome.runtime.getURL('assets/applications-internet.svg');
     
-    sitesGrid.innerHTML = sites.map(site => {
+    sitesGrid.innerHTML = parentSites.map(site => {
         // Use custom icon URL if provided, otherwise use favicon
         const iconUrl = site.iconUrl || getFaviconUrl(site.url);
         const initial = getInitial(site.name);
         const editIconsClass = isEditMode ? 'edit-icons-visible' : (showOnHover ? 'edit-icons-hover' : 'edit-icons-hidden');
+        const hasChildSites = hasChildren(site.id, sites);
         return `
             <div class="site-item" data-id="${site.id}" draggable="${isEditMode}">
                 <div class="site-icon" data-site-name="${site.name}">
@@ -153,8 +162,15 @@ async function renderSites() {
                             </svg>
                         </div>
                     </div>
+                    ${hasChildSites ? `
+                        <div class="down-arrow-icon" data-parent-id="${site.id}" data-debug-site-name="${site.name}">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </div>
+                    ` : ''}
                 </div>
-                <div class="site-name">${site.name}</div>
+                    <div class="site-name">${site.name}</div>
             </div>
         `;
     }).join('');
@@ -293,7 +309,7 @@ async function renderSites() {
     let dragStarted = false;
     document.querySelectorAll('.site-item').forEach(item => {
         const siteId = item.getAttribute('data-id');
-        const site = sites.find(s => s.id === siteId);
+        const site = parentSites.find(s => s.id === siteId);
         
         item.addEventListener('dragstart', () => {
             dragStarted = true;
@@ -312,6 +328,10 @@ async function renderSites() {
                 dragStarted = false;
                 return;
             }
+            // Don't navigate if clicking down arrow or any of its children
+            if (e.target.closest('.down-arrow-icon')) {
+                return; // Let the down arrow's own click handler handle it
+            }
             // Don't navigate if in edit mode or clicking edit/delete/advanced/move buttons
             const isEditMode = await getEditMode();
             if (isEditMode || e.target.closest('.edit-icon') || e.target.closest('.delete-icon') || e.target.closest('.advanced-icon') || e.target.closest('.move-icon') || e.target.closest('.move-arrow-left') || e.target.closest('.move-arrow-right')) {
@@ -324,6 +344,8 @@ async function renderSites() {
             window.location.href = site.url;
         });
     });
+    
+    // Down arrow click handlers are set up globally below (outside renderSites)
     
     // Add edit handlers (always add, but only enable drag in edit mode)
     document.querySelectorAll('.edit-icon').forEach(icon => {
@@ -339,9 +361,18 @@ async function renderSites() {
         icon.addEventListener('click', async (e) => {
             e.stopPropagation();
             const siteId = icon.getAttribute('data-id');
-            if (confirm('Are you sure you want to delete this site?')) {
-                const sites = await getSites();
-                const filteredSites = sites.filter(s => s.id !== siteId);
+            const sites = await getSites();
+            const site = sites.find(s => s.id === siteId);
+            const childSites = sites.filter(s => s.parentId === siteId);
+            
+            let confirmMessage = 'Are you sure you want to delete this site?';
+            if (childSites.length > 0) {
+                confirmMessage += `\n\nThis site has ${childSites.length} sub-site(s). They will also be deleted.`;
+            }
+            
+            if (confirm(confirmMessage)) {
+                // Delete the site and all its children
+                const filteredSites = sites.filter(s => s.id !== siteId && s.parentId !== siteId);
                 await saveSites(filteredSites);
                 renderSites();
             }
@@ -685,16 +716,114 @@ addSiteModal.addEventListener('click', (e) => {
     }
 });
 
+// Populate parent dropdown
+async function populateParentDropdown(selectElement, excludeId = null) {
+    const sites = await getSites();
+    const parentSites = sites.filter(site => !site.parentId && site.id !== excludeId);
+    
+    // Clear existing options except "None"
+    selectElement.innerHTML = '<option value="">None (Parent Icon)</option>';
+    
+    parentSites.forEach(site => {
+        const option = document.createElement('option');
+        option.value = site.id;
+        option.textContent = site.name;
+        selectElement.appendChild(option);
+    });
+}
+
+addSiteBtn.addEventListener('click', async () => {
+    addSiteModal.classList.add('active');
+    await populateParentDropdown(document.getElementById('siteParent'));
+    // Clear any previous errors
+    hideError('siteName', 'siteNameError');
+    hideError('siteUrl', 'siteUrlError');
+    document.getElementById('siteName').focus();
+});
+
+// Clear errors when user types
+document.getElementById('siteName').addEventListener('input', () => {
+    hideError('siteName', 'siteNameError');
+});
+
+document.getElementById('siteUrl').addEventListener('input', () => {
+    hideError('siteUrl', 'siteUrlError');
+});
+
+// Helper function to show error message
+function showError(inputId, errorId, message) {
+    const errorDiv = document.getElementById(errorId);
+    if (errorDiv) {
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.style.borderColor = '#ff4444';
+        }
+    }
+}
+
+// Helper function to hide error message
+function hideError(inputId, errorId) {
+    const errorDiv = document.getElementById(errorId);
+    if (errorDiv) {
+        errorDiv.style.display = 'none';
+        const input = document.getElementById(inputId);
+        if (input) {
+            input.style.borderColor = '#e0e0e0';
+        }
+    }
+}
+
 addSiteForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    
+    // Clear previous errors
+    hideError('siteName', 'siteNameError');
+    hideError('siteUrl', 'siteUrlError');
     
     const name = document.getElementById('siteName').value.trim();
     let url = document.getElementById('siteUrl').value.trim();
     let iconUrl = document.getElementById('siteIconUrl').value.trim();
+    const parentId = document.getElementById('siteParent').value || null;
     
-    // Ensure URL has protocol
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    // Validate name
+    if (!name) {
+        showError('siteName', 'siteNameError', 'Please enter a site name.');
+        document.getElementById('siteName').focus();
+        return;
+    }
+    
+    // Check for duplicate name
+    const sites = await getSites();
+    const existingSite = sites.find(s => s.name.toLowerCase() === name.toLowerCase());
+    if (existingSite) {
+        showError('siteName', 'siteNameError', 'A site with this name already exists. Please use a different name.');
+        document.getElementById('siteName').focus();
+        return;
+    }
+    
+    // Validate URL
+    if (!url) {
+        showError('siteUrl', 'siteUrlError', 'Please enter a URL.');
+        document.getElementById('siteUrl').focus();
+        return;
+    }
+    
+    // Ensure URL has protocol (allow chrome://, chrome-extension://, about:, etc.)
+    if (!url.startsWith('http://') && !url.startsWith('https://') && 
+        !url.startsWith('chrome://') && !url.startsWith('chrome-extension://') && 
+        !url.startsWith('about:') && !url.startsWith('file://')) {
         url = 'https://' + url;
+    }
+    
+    // Validate URL format
+    try {
+        new URL(url);
+    } catch (e) {
+        showError('siteUrl', 'siteUrlError', 'Please enter a valid URL.');
+        document.getElementById('siteUrl').focus();
+        return;
     }
     
     // Ensure icon URL has protocol if provided
@@ -702,7 +831,6 @@ addSiteForm.addEventListener('submit', async (e) => {
         iconUrl = 'https://' + iconUrl;
     }
     
-    const sites = await getSites();
     const newSite = {
         id: Date.now().toString(),
         name,
@@ -715,11 +843,18 @@ addSiteForm.addEventListener('submit', async (e) => {
         newSite.iconUrl = iconUrl;
     }
     
+    // Add parentId if selected
+    if (parentId) {
+        newSite.parentId = parentId;
+    }
+    
     sites.push(newSite);
     await saveSites(sites);
     
     addSiteModal.classList.remove('active');
     addSiteForm.reset();
+    hideError('siteName', 'siteNameError');
+    hideError('siteUrl', 'siteUrlError');
     renderSites();
 });
 
@@ -764,8 +899,27 @@ async function openEditModal(siteId) {
     document.getElementById('editSiteUrl').value = site.url;
     document.getElementById('editSiteIconUrl').value = site.iconUrl || '';
     
+    // Populate and set parent dropdown
+    await populateParentDropdown(document.getElementById('editSiteParent'), site.id);
+    document.getElementById('editSiteParent').value = site.parentId || '';
+    
+    // Clear any previous errors
+    hideError('editSiteName', 'editSiteNameError');
+    hideError('editSiteUrl', 'editSiteUrlError');
+    
     editSiteModal.classList.add('active');
+    // Ensure edit modal appears above sub-launcher modal
+    editSiteModal.style.zIndex = '1002';
 }
+
+// Clear errors when user types in edit form
+document.getElementById('editSiteName').addEventListener('input', () => {
+    hideError('editSiteName', 'editSiteNameError');
+});
+
+document.getElementById('editSiteUrl').addEventListener('input', () => {
+    hideError('editSiteUrl', 'editSiteUrlError');
+});
 
 cancelEditBtn.addEventListener('click', () => {
     editSiteModal.classList.remove('active');
@@ -782,14 +936,53 @@ editSiteModal.addEventListener('click', (e) => {
 editSiteForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    // Clear previous errors
+    hideError('editSiteName', 'editSiteNameError');
+    hideError('editSiteUrl', 'editSiteUrlError');
+    
     const siteId = document.getElementById('editSiteId').value;
     const name = document.getElementById('editSiteName').value.trim();
     let url = document.getElementById('editSiteUrl').value.trim();
     let iconUrl = document.getElementById('editSiteIconUrl').value.trim();
+    const parentId = document.getElementById('editSiteParent').value || null;
     
-    // Ensure URL has protocol
-    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    // Validate name
+    if (!name) {
+        showError('editSiteName', 'editSiteNameError', 'Please enter a site name.');
+        document.getElementById('editSiteName').focus();
+        return;
+    }
+    
+    // Check for duplicate name (excluding current site)
+    const sites = await getSites();
+    const existingSite = sites.find(s => s.id !== siteId && s.name.toLowerCase() === name.toLowerCase());
+    if (existingSite) {
+        showError('editSiteName', 'editSiteNameError', 'A site with this name already exists. Please use a different name.');
+        document.getElementById('editSiteName').focus();
+        return;
+    }
+    
+    // Validate URL
+    if (!url) {
+        showError('editSiteUrl', 'editSiteUrlError', 'Please enter a URL.');
+        document.getElementById('editSiteUrl').focus();
+        return;
+    }
+    
+    // Ensure URL has protocol (allow chrome://, chrome-extension://, about:, etc.)
+    if (!url.startsWith('http://') && !url.startsWith('https://') && 
+        !url.startsWith('chrome://') && !url.startsWith('chrome-extension://') && 
+        !url.startsWith('about:') && !url.startsWith('file://')) {
         url = 'https://' + url;
+    }
+    
+    // Validate URL format
+    try {
+        new URL(url);
+    } catch (e) {
+        showError('editSiteUrl', 'editSiteUrlError', 'Please enter a valid URL.');
+        document.getElementById('editSiteUrl').focus();
+        return;
     }
     
     // Ensure icon URL has protocol if provided
@@ -797,7 +990,6 @@ editSiteForm.addEventListener('submit', async (e) => {
         iconUrl = 'https://' + iconUrl;
     }
     
-    const sites = await getSites();
     const siteIndex = sites.findIndex(s => s.id === siteId);
     
     if (siteIndex !== -1) {
@@ -814,29 +1006,141 @@ editSiteForm.addEventListener('submit', async (e) => {
             delete updatedSite.iconUrl;
         }
         
+        // Set parentId or remove it if empty
+        if (parentId) {
+            updatedSite.parentId = parentId;
+        } else {
+            delete updatedSite.parentId;
+        }
+        
         sites[siteIndex] = updatedSite;
         await saveSites(sites);
     }
     
     editSiteModal.classList.remove('active');
     editSiteForm.reset();
+    hideError('editSiteName', 'editSiteNameError');
+    hideError('editSiteUrl', 'editSiteUrlError');
     renderSites();
+    
+    // If sub-launcher modal is open, refresh it if:
+    // 1. The edited site is a child of the currently open parent, OR
+    // 2. The edited site IS the currently open parent
+    if (currentOpenSubLauncherParentId) {
+        const updatedSites = await getSites();
+        const editedSite = updatedSites.find(s => s.id === siteId);
+        if (editedSite && (
+            editedSite.parentId === currentOpenSubLauncherParentId ||
+            editedSite.id === currentOpenSubLauncherParentId
+        )) {
+            openSubLauncherModal(currentOpenSubLauncherParentId);
+        }
+    }
 });
 
 deleteSiteBtn.addEventListener('click', async () => {
-    if (!confirm('Are you sure you want to delete this site?')) {
+    const siteId = document.getElementById('editSiteId').value;
+    const sites = await getSites();
+    const site = sites.find(s => s.id === siteId);
+    const childSites = sites.filter(s => s.parentId === siteId);
+    
+    let confirmMessage = 'Are you sure you want to delete this site?';
+    if (childSites.length > 0) {
+        confirmMessage += `\n\nThis site has ${childSites.length} sub-site(s). They will also be deleted.`;
+    }
+    
+    if (!confirm(confirmMessage)) {
         return;
     }
     
-    const siteId = document.getElementById('editSiteId').value;
-    const sites = await getSites();
-    const filteredSites = sites.filter(s => s.id !== siteId);
+    // Delete the site and all its children
+    const filteredSites = sites.filter(s => s.id !== siteId && s.parentId !== siteId);
     
     await saveSites(filteredSites);
     
     editSiteModal.classList.remove('active');
     editSiteForm.reset();
     renderSites();
+});
+
+// Duplicate site button
+const duplicateSiteBtn = document.getElementById('duplicateSiteBtn');
+duplicateSiteBtn.addEventListener('click', async () => {
+    const siteId = document.getElementById('editSiteId').value;
+    const sites = await getSites();
+    const site = sites.find(s => s.id === siteId);
+    
+    if (!site) return;
+    
+    // Find the next available copy number
+    const baseName = site.name;
+    const copyPattern = /^(.+?)\s*\(copy\s+(\d+)\)$/i;
+    const match = baseName.match(copyPattern);
+    const originalName = match ? match[1] : baseName;
+    
+    // Find all existing copies
+    const existingCopies = sites.filter(s => {
+        if (s.name === originalName) return true;
+        const siteMatch = s.name.match(copyPattern);
+        return siteMatch && siteMatch[1] === originalName;
+    });
+    
+    // Find the highest copy number
+    let maxCopyNumber = 0;
+    existingCopies.forEach(s => {
+        if (s.name === originalName) {
+            maxCopyNumber = Math.max(maxCopyNumber, 0);
+        } else {
+            const siteMatch = s.name.match(copyPattern);
+            if (siteMatch) {
+                const copyNum = parseInt(siteMatch[2], 10);
+                maxCopyNumber = Math.max(maxCopyNumber, copyNum);
+            }
+        }
+    });
+    
+    // Create new copy number
+    const newCopyNumber = maxCopyNumber + 1;
+    const newName = newCopyNumber === 1 
+        ? `${originalName} (copy 1)`
+        : `${originalName} (copy ${newCopyNumber})`;
+    
+    // Create duplicate site with all the same data
+    const duplicatedSite = {
+        id: Date.now().toString(),
+        name: newName,
+        url: site.url,
+        createdAt: Date.now(),
+        parentId: site.parentId || undefined
+    };
+    
+    // Copy iconUrl if it exists
+    if (site.iconUrl) {
+        duplicatedSite.iconUrl = site.iconUrl;
+    }
+    
+    // Copy advanced scripts if they exist
+    if (site.scripts && Array.isArray(site.scripts)) {
+        duplicatedSite.scripts = [...site.scripts];
+    }
+    
+    // Add the duplicated site
+    sites.push(duplicatedSite);
+    await saveSites(sites);
+    
+    // Close modal and re-render
+    editSiteModal.classList.remove('active');
+    editSiteForm.reset();
+    renderSites();
+    
+    // If sub-launcher modal is open, refresh it if the duplicated site is a child of the currently open parent
+    if (currentOpenSubLauncherParentId) {
+        const updatedSites = await getSites();
+        const duplicatedSiteUpdated = updatedSites.find(s => s.id === duplicatedSite.id);
+        if (duplicatedSiteUpdated && duplicatedSiteUpdated.parentId === currentOpenSubLauncherParentId) {
+            openSubLauncherModal(currentOpenSubLauncherParentId);
+        }
+    }
 });
 
 // Keyboard shortcuts
@@ -999,6 +1303,26 @@ function setAdaptiveTextColor(brightness) {
     } else {
         root.style.setProperty('--text-color', '#ffffff');
         root.style.setProperty('--text-color-secondary', '#e0e0e0');
+    }
+}
+
+// Set text color for modal based on background brightness
+// Use the same approach as main page - set CSS variables on the modal element
+function setAdaptiveTextColorForModal(brightness) {
+    const modal = document.getElementById('subLauncherModal');
+    if (!modal) {
+        return;
+    }
+    
+    // Use the same CSS variable names as the main page
+    // The site-name class already uses var(--text-color) from CSS
+    // Set on the modal element so all children inherit it
+    if (brightness > 128) {
+        modal.style.setProperty('--text-color', '#1a1a1a');
+        modal.style.setProperty('--text-color-secondary', '#4a4a4a');
+    } else {
+        modal.style.setProperty('--text-color', '#ffffff');
+        modal.style.setProperty('--text-color-secondary', '#e0e0e0');
     }
 }
 
@@ -1720,6 +2044,7 @@ function createScriptItem(script = null) {
     const timing = script?.timing || 'document_end';
     const code = script?.code || '';
     const runAlways = script?.runAlways !== false; // Default to true (always run)
+    const confirmPopup = script?.confirmPopup || false; // Default to false
     
     const timingSelectId = `script-timing-${scriptId}`;
     const codeTextareaId = `script-code-${scriptId}`;
@@ -1735,6 +2060,15 @@ function createScriptItem(script = null) {
             </label>
             <small style="display: block; margin-top: 4px; color: #666; font-size: 12px; margin-left: 24px;">
                 Uncheck to run only when opened via launcher
+            </small>
+        </div>
+        <div class="form-group" style="margin-bottom: 10px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <input type="checkbox" class="script-confirm-popup" name="script-confirm-popup-${scriptId}" data-script-id="${scriptId}" ${confirmPopup ? 'checked' : ''}>
+                <span>Confirm Popup</span>
+            </label>
+            <small style="display: block; margin-top: 4px; color: #666; font-size: 12px; margin-left: 24px;">
+                Shows a confirmation popup before executing the script. Press Enter to confirm or Esc to cancel.
             </small>
         </div>
         <label for="${timingSelectId}" style="display: block; margin-bottom: 8px; color: #555; font-weight: 500; font-size: 13px;">Execution Timing</label>
@@ -1843,12 +2177,14 @@ function setupAdvancedModalListeners() {
             const timing = item.querySelector('.script-timing-select').value;
             const code = item.querySelector('.script-code-textarea').value.trim();
             const runAlways = item.querySelector('.script-run-always').checked;
+            const confirmPopup = item.querySelector('.script-confirm-popup').checked;
             
             if (code) {
                 scripts.push({
                     timing,
                     code,
-                    runAlways
+                    runAlways,
+                    confirmPopup: confirmPopup || false
                 });
             }
         });
@@ -2328,6 +2664,910 @@ if (scriptsPage) {
         attributes: true,
         attributeFilter: ['class']
     });
+}
+
+// Global down arrow click handler - set up once
+let downArrowClickHandler = null;
+
+function setupDownArrowClickHandler() {
+    if (downArrowClickHandler) {
+        document.removeEventListener('click', downArrowClickHandler, true);
+    }
+    
+    downArrowClickHandler = (e) => {
+        // Check if click is on down arrow or its SVG child
+        const downArrow = e.target.closest('.down-arrow-icon');
+        
+        if (downArrow) {
+            e.stopPropagation();
+            e.preventDefault();
+            const parentId = downArrow.getAttribute('data-parent-id');
+            
+            if (parentId) {
+                openSubLauncherModal(parentId);
+            }
+        }
+    };
+    
+    document.addEventListener('click', downArrowClickHandler, true); // Use capture phase
+}
+
+// Track which parent's sub-launcher modal is currently open
+let currentOpenSubLauncherParentId = null;
+
+// Sub-launcher modal functions
+async function openSubLauncherModal(parentId) {
+    const sites = await getSites();
+    const parentSite = sites.find(s => s.id === parentId);
+    const childSites = sites.filter(s => s.parentId === parentId);
+    
+    if (!parentSite) {
+        return;
+    }
+    
+    const modal = document.getElementById('subLauncherModal');
+    const grid = document.getElementById('subLauncherGrid');
+    
+    if (!modal) {
+        return;
+    }
+    
+    // Track the currently open parent ID
+    currentOpenSubLauncherParentId = parentId;
+    
+    const modalContentEl = modal.querySelector('.sub-launcher-modal-content');
+    
+    if (childSites.length === 0) {
+        grid.innerHTML = `
+            <div class="empty-state" style="text-align: center; padding: 40px; color: var(--text-color, #333);">
+                <h2 style="color: var(--text-color, #333);">No Sub-Sites</h2>
+                <p style="color: var(--text-color-secondary, #666);">This site doesn't have any sub-sites yet. Add sub-sites by selecting this site as a parent when adding or editing a site.</p>
+            </div>
+        `;
+    } else {
+        const defaultIconUrl = chrome.runtime.getURL('assets/applications-internet.svg');
+        const isEditMode = await getEditMode();
+        const showOnHover = await getShowEditOnHover();
+        const editIconsClass = isEditMode ? 'edit-icons-visible' : (showOnHover ? 'edit-icons-hover' : 'edit-icons-hidden');
+        
+        grid.innerHTML = childSites.map(site => {
+            const iconUrl = site.iconUrl || getFaviconUrl(site.url);
+            const initial = getInitial(site.name);
+            return `
+                <div class="site-item" data-id="${site.id}" draggable="${isEditMode}">
+                    <div class="site-icon" data-site-name="${site.name}">
+                        <div class="site-icon-fallback">${initial}</div>
+                        ${iconUrl ? `<img src="${iconUrl}" alt="${site.name}" data-site-id="${site.id}" data-site-url="${site.url}" data-favicon-index="0">` : `<img src="${defaultIconUrl}" alt="${site.name}" data-site-id="${site.id}" class="site-icon-svg-fallback">`}
+                        <div class="edit-icons ${editIconsClass}">
+                            <div class="edit-icon" data-id="${site.id}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                </svg>
+                            </div>
+                            <div class="delete-icon" data-id="${site.id}">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </div>
+                            <div class="advanced-icon" data-id="${site.id}" title="Advanced Scripts">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <path d="M12 16v-4M12 8h.01"></path>
+                                </svg>
+                            </div>
+                            <div class="move-icon" data-id="${site.id}" title="Move">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="5 9 2 12 5 15"></polyline>
+                                    <polyline points="9 5 12 2 15 5"></polyline>
+                                    <polyline points="15 19 12 22 9 19"></polyline>
+                                    <polyline points="19 9 22 12 19 15"></polyline>
+                                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                                    <line x1="12" y1="2" x2="12" y2="22"></line>
+                                </svg>
+                            </div>
+                            <div class="move-arrow-left" data-id="${site.id}" data-direction="left" style="display: none;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </div>
+                            <div class="move-arrow-right" data-id="${site.id}" data-direction="right" style="display: none;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="site-name">${site.name}</div>
+                </div>
+            `;
+        }).join('');
+        
+        // Add image error handlers for child sites
+        document.querySelectorAll('#subLauncherGrid .site-icon img').forEach(img => {
+            const isSvgFallback = img.classList.contains('site-icon-svg-fallback');
+            const fallback = img.parentElement.querySelector('.site-icon-fallback');
+            
+            if (isSvgFallback) {
+                if (fallback) {
+                    fallback.style.display = 'none';
+                }
+                img.addEventListener('error', function() {
+                    this.style.display = 'none';
+                    if (fallback) {
+                        fallback.style.display = 'flex';
+                    }
+                });
+            } else {
+                img.style.display = 'none';
+                if (fallback) {
+                    fallback.style.display = 'flex';
+                }
+                
+                img.addEventListener('error', function() {
+                    const siteUrl = this.getAttribute('data-site-url');
+                    if (!siteUrl) {
+                        this.src = defaultIconUrl;
+                        this.classList.add('site-icon-svg-fallback');
+                        if (fallback) {
+                            fallback.style.display = 'none';
+                        }
+                        return;
+                    }
+                    
+                    const currentSrc = this.src;
+                    const isGoogleFaviconService = currentSrc && currentSrc.includes('www.google.com/s2/favicons');
+                    
+                    if (isGoogleFaviconService) {
+                        this.src = defaultIconUrl;
+                        this.classList.add('site-icon-svg-fallback');
+                        this.addEventListener('error', function() {
+                            this.style.display = 'none';
+                            if (fallback) {
+                                fallback.style.display = 'flex';
+                            }
+                        }, { once: true });
+                        if (fallback) {
+                            fallback.style.display = 'none';
+                        }
+                        return;
+                    }
+                    
+                    const faviconUrls = getFaviconUrls(siteUrl);
+                    let currentIndex = parseInt(this.getAttribute('data-favicon-index') || '0', 10);
+                    currentIndex++;
+                    
+                    if (currentIndex < faviconUrls.length) {
+                        this.setAttribute('data-favicon-index', currentIndex.toString());
+                        this.src = faviconUrls[currentIndex];
+                    } else {
+                        this.src = defaultIconUrl;
+                        this.classList.add('site-icon-svg-fallback');
+                        this.addEventListener('error', function() {
+                            this.style.display = 'none';
+                            if (fallback) {
+                                fallback.style.display = 'flex';
+                            }
+                        }, { once: true });
+                        if (fallback) {
+                            fallback.style.display = 'none';
+                        }
+                    }
+                });
+                
+                img.addEventListener('load', function() {
+                    const currentSrc = this.src;
+                    const isGoogleFaviconService = currentSrc && currentSrc.includes('www.google.com/s2/favicons');
+                    
+                    if (isGoogleFaviconService) {
+                        if (this.naturalWidth === 16 && this.naturalHeight === 16) {
+                            this.src = defaultIconUrl;
+                            this.classList.add('site-icon-svg-fallback');
+                            this.addEventListener('error', function() {
+                                this.style.display = 'none';
+                                if (fallback) {
+                                    fallback.style.display = 'flex';
+                                }
+                            }, { once: true });
+                            if (fallback) {
+                                fallback.style.display = 'none';
+                            }
+                            return;
+                        }
+                    }
+                    
+                    if (fallback) {
+                        fallback.style.display = 'none';
+                    }
+                    this.style.display = 'block';
+                });
+            }
+        });
+        
+        // Add click handlers for child sites
+        document.querySelectorAll('#subLauncherGrid .site-item').forEach(item => {
+            const siteId = item.getAttribute('data-id');
+            const site = childSites.find(s => s.id === siteId);
+            
+            item.addEventListener('click', async (e) => {
+                // Don't navigate if clicking on edit icons
+                if (e.target.closest('.edit-icon, .delete-icon, .advanced-icon, .move-icon, .move-arrow-left, .move-arrow-right')) {
+                    return;
+                }
+                e.stopPropagation();
+                // Mark that this site is being opened via launcher
+                await chrome.storage.session.set({ [`launcher_opened_${site.id}`]: true });
+                window.location.href = site.url;
+            });
+        });
+        
+        // Add edit icon handlers for modal sites
+        document.querySelectorAll('#subLauncherGrid .edit-icon').forEach(icon => {
+            icon.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const siteId = icon.getAttribute('data-id');
+                await openEditModal(siteId);
+            });
+        });
+        
+        // Add delete handlers for modal sites
+        document.querySelectorAll('#subLauncherGrid .delete-icon').forEach(icon => {
+            icon.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const siteId = icon.getAttribute('data-id');
+                const sites = await getSites();
+                const site = sites.find(s => s.id === siteId);
+                const childSites = sites.filter(s => s.parentId === siteId);
+                
+                let confirmMessage = 'Are you sure you want to delete this site?';
+                if (childSites.length > 0) {
+                    confirmMessage += `\n\nThis site has ${childSites.length} sub-site(s). They will also be deleted.`;
+                }
+                
+                if (confirm(confirmMessage)) {
+                    // Delete the site and all its children
+                    const filteredSites = sites.filter(s => s.id !== siteId && s.parentId !== siteId);
+                    await saveSites(filteredSites);
+                    // Re-render both main page and modal
+                    renderSites();
+                    openSubLauncherModal(parentId);
+                }
+            });
+        });
+        
+        // Add advanced handlers for modal sites
+        document.querySelectorAll('#subLauncherGrid .advanced-icon').forEach(icon => {
+            const newIcon = icon.cloneNode(true);
+            icon.parentNode.replaceChild(newIcon, icon);
+            
+            newIcon.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                const siteId = newIcon.getAttribute('data-id');
+                if (siteId) {
+                    await openAdvancedModal(siteId);
+                }
+            });
+            
+            newIcon.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+            });
+        });
+        
+        // Add move handlers for modal sites
+        document.querySelectorAll('#subLauncherGrid .move-icon').forEach(icon => {
+            icon.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const siteId = icon.getAttribute('data-id');
+                activateMoveMode(siteId);
+            });
+        });
+        
+        // Add move arrow handlers for modal sites (delegated event handling)
+        document.addEventListener('click', async (e) => {
+            if (e.target.closest('#subLauncherGrid .move-arrow-left') || e.target.closest('#subLauncherGrid .move-arrow-right')) {
+                e.stopPropagation();
+                const arrow = e.target.closest('.move-arrow-left') || e.target.closest('.move-arrow-right');
+                const targetSiteId = arrow.getAttribute('data-id');
+                const direction = arrow.getAttribute('data-direction');
+                await moveSite(targetSiteId, direction);
+                // Re-render modal after move
+                openSubLauncherModal(parentId);
+            }
+        });
+        
+        // Add drag and drop handlers for modal sites (only in edit mode)
+        if (isEditMode) {
+            setupDragAndDropForModal();
+        }
+    }
+    
+    modal.classList.add('active');
+    // Force modal to be visible (override Chrome UI hiding CSS)
+    modal.style.display = 'flex';
+    modal.style.visibility = 'visible';
+    modal.style.opacity = '1';
+    modal.style.zIndex = '1000';
+    
+    // If opened via keyboard, show number overlays
+    if (keyboardShortcutMode && isMacOS) {
+        // Use requestAnimationFrame to ensure DOM is ready
+        requestAnimationFrame(() => {
+            showNumberOverlays(grid, subLauncherNumberMap, false);
+        });
+    }
+    
+    // Apply the same background theme to modal as the main page
+    const result = await chrome.storage.local.get(['theme']);
+    const theme = result.theme || { type: 'color', value: '#ffffff' };
+    
+    // Apply the same background to modal content
+    if (modalContentEl) {
+        if (theme.type === 'color') {
+            modalContentEl.style.background = theme.value;
+            modalContentEl.style.backgroundImage = 'none';
+            const brightness = getColorBrightness(theme.value);
+            setAdaptiveTextColorForModal(brightness);
+        } else if (theme.type === 'image') {
+            if (theme.value.startsWith('data:') || theme.value.startsWith('blob:')) {
+                modalContentEl.style.backgroundImage = `url(${theme.value})`;
+            } else {
+                modalContentEl.style.backgroundImage = `url(${theme.value})`;
+            }
+            modalContentEl.style.backgroundSize = 'cover';
+            modalContentEl.style.backgroundPosition = 'center';
+            modalContentEl.style.backgroundRepeat = 'no-repeat';
+            getImageBrightness(theme.value, (brightness) => {
+                setAdaptiveTextColorForModal(brightness);
+            });
+        }
+    }
+}
+
+// Setup drag and drop for modal sites
+function setupDragAndDropForModal() {
+    const siteItems = document.querySelectorAll('#subLauncherGrid .site-item');
+    const subLauncherGrid = document.getElementById('subLauncherGrid');
+    
+    siteItems.forEach((item) => {
+        // Prevent dragging when clicking edit icon
+        const editIcon = item.querySelector('.edit-icon');
+        if (editIcon) {
+            editIcon.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                item.draggable = false;
+                setTimeout(() => {
+                    item.draggable = true;
+                }, 100);
+            });
+        }
+        
+        item.addEventListener('dragstart', (e) => {
+            item.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', item.innerHTML);
+            e.dataTransfer.setDragImage(item, item.offsetWidth / 2, item.offsetHeight / 2);
+        });
+        
+        item.addEventListener('dragend', (e) => {
+            item.classList.remove('dragging');
+            document.querySelectorAll('#subLauncherGrid .site-item').forEach(el => {
+                el.classList.remove('drag-over');
+            });
+        });
+        
+        item.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const dragging = document.querySelector('.dragging');
+            if (!dragging) return;
+            
+            const afterElement = getDragAfterElement(subLauncherGrid, e.clientY);
+            
+            // Remove drag-over from all items first
+            document.querySelectorAll('#subLauncherGrid .site-item').forEach(el => {
+                if (el !== dragging) {
+                    el.classList.remove('drag-over');
+                }
+            });
+            
+            // Add drag-over to the item we're hovering over
+            if (item !== dragging) {
+                item.classList.add('drag-over');
+            }
+            
+            if (afterElement == null) {
+                subLauncherGrid.appendChild(dragging);
+            } else {
+                subLauncherGrid.insertBefore(dragging, afterElement);
+            }
+        });
+        
+        item.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            if (item !== document.querySelector('.dragging')) {
+                item.classList.add('drag-over');
+            }
+        });
+        
+        item.addEventListener('dragleave', (e) => {
+            if (!item.contains(e.relatedTarget)) {
+                item.classList.remove('drag-over');
+            }
+        });
+        
+        item.addEventListener('drop', async (e) => {
+            e.preventDefault();
+            item.classList.remove('drag-over');
+            
+            const dragging = document.querySelector('.dragging');
+            if (dragging && dragging !== item) {
+                // Get all site items in current order
+                const allItems = Array.from(subLauncherGrid.querySelectorAll('.site-item'));
+                const newOrder = allItems.map(el => el.getAttribute('data-id'));
+                
+                // Get the parent ID from the modal's data attribute or find it from the sites
+                const sites = await getSites();
+                const firstChildId = allItems[0]?.getAttribute('data-id');
+                const firstChild = sites.find(s => s.id === firstChildId);
+                const parentId = firstChild?.parentId;
+                
+                if (parentId) {
+                    const childSites = sites.filter(s => s.parentId === parentId);
+                    const reorderedChildSites = newOrder.map(id => childSites.find(s => s.id === id)).filter(Boolean);
+                    const otherSites = sites.filter(s => s.parentId !== parentId);
+                    const reorderedSites = [...otherSites, ...reorderedChildSites];
+                    
+                    // Save new order
+                    await saveSites(reorderedSites);
+                    
+                    // Re-render modal
+                    openSubLauncherModal(parentId);
+                }
+            }
+        });
+    });
+}
+
+// Close sub-launcher modal
+// Close sub-launcher modal function
+function closeSubLauncherModal() {
+    const subLauncherModal = document.getElementById('subLauncherModal');
+    if (subLauncherModal) {
+        subLauncherModal.classList.remove('active');
+        // Clear inline styles
+        subLauncherModal.style.display = '';
+        subLauncherModal.style.visibility = '';
+        subLauncherModal.style.opacity = '';
+        subLauncherModal.style.zIndex = '';
+    }
+    // Clear the tracked parent ID
+    currentOpenSubLauncherParentId = null;
+    // Reset keyboard shortcut mode
+    keyboardShortcutMode = false;
+    subLauncherNumberMap.clear();
+}
+
+// Setup close handlers for sub-launcher modal
+const closeSubLauncherBtn = document.getElementById('closeSubLauncherBtn');
+const subLauncherModal = document.getElementById('subLauncherModal');
+
+if (closeSubLauncherBtn) {
+    closeSubLauncherBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeSubLauncherModal();
+    });
+}
+
+if (subLauncherModal) {
+    // Close on backdrop click
+    subLauncherModal.addEventListener('click', (e) => {
+        if (e.target === subLauncherModal) {
+            closeSubLauncherModal();
+        }
+    });
+}
+
+// Generic function to close any modal
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    
+    // Special handling for sub-launcher modal
+    if (modalId === 'subLauncherModal') {
+        closeSubLauncherModal();
+        return;
+    }
+    
+    // Special handling for global script modal
+    if (modalId === 'globalScriptModal') {
+        const form = document.getElementById('globalScriptForm');
+        if (form) {
+            form.reset();
+        }
+        const codeContainer = document.getElementById('globalScriptCodeContainer');
+        if (codeContainer) {
+            codeContainer.innerHTML = '';
+        }
+        // Reset any other state if needed
+    }
+    
+    // Special handling for edit site modal
+    if (modalId === 'editSiteModal') {
+        const form = document.getElementById('editSiteForm');
+        if (form) {
+            form.reset();
+        }
+    }
+    
+    // Special handling for add site modal
+    if (modalId === 'addSiteModal') {
+        const form = document.getElementById('addSiteForm');
+        if (form) {
+            form.reset();
+        }
+        // Hide error messages
+        const nameError = document.getElementById('siteNameError');
+        const urlError = document.getElementById('siteUrlError');
+        if (nameError) nameError.style.display = 'none';
+        if (urlError) urlError.style.display = 'none';
+    }
+    
+    // Close the modal
+    modal.classList.remove('active');
+    // Clear inline styles if any
+    modal.style.display = '';
+    modal.style.visibility = '';
+    modal.style.opacity = '';
+    modal.style.zIndex = '';
+}
+
+// Setup close button handlers for all modals
+document.querySelectorAll('.modal-close-btn').forEach(btn => {
+    const modalId = btn.getAttribute('data-modal');
+    if (modalId) {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeModal(modalId);
+        });
+    }
+});
+
+// Unified Escape key handler for all modals
+document.addEventListener('keydown', (e) => {
+    // Don't interfere with keyboard shortcuts
+    if (isMacOS && e.ctrlKey && !e.metaKey) {
+        return;
+    }
+    
+    if (e.key === 'Escape') {
+        // Find the currently active modal
+        const modals = ['addSiteModal', 'editSiteModal', 'themeModal', 'advancedScriptsModal', 'globalScriptModal', 'subLauncherModal'];
+        for (const modalId of modals) {
+            const modal = document.getElementById(modalId);
+            if (modal && modal.classList.contains('active')) {
+                e.preventDefault();
+                e.stopPropagation();
+                closeModal(modalId);
+                break;
+            }
+        }
+    }
+});
+
+// Setup down arrow click handler once
+setupDownArrowClickHandler();
+
+// ========== Keyboard Shortcuts (macOS only) ==========
+// Detect macOS
+const isMacOS = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+
+// Track keyboard state
+let isControlPressed = false;
+let isShiftPressed = false;
+let keyboardShortcutMode = false; // true if sub-launcher opened via keyboard
+let siteNumberMap = new Map(); // Maps number/letter to site element
+let subLauncherNumberMap = new Map(); // Maps number/letter to site element in sub-launcher
+let lastControlKeydownTime = 0; // Track when Control was last pressed
+
+// Get number/letter label for index (1-9, then a-z)
+function getNumberLabel(index) {
+    if (index < 9) {
+        return (index + 1).toString();
+    } else if (index < 35) { // 9 + 26 = 35 total
+        return String.fromCharCode(97 + (index - 9)); // 'a' to 'z'
+    }
+    return null; // No label if exhausted
+}
+
+// Show number overlays on site icons
+async function showNumberOverlays(container, numberMap, showArrows = false) {
+    numberMap.clear();
+    const siteItems = container.querySelectorAll('.site-item');
+    let index = 0;
+    
+    // Get sites to check for children
+    const sites = await getSites();
+    
+    siteItems.forEach(item => {
+        const label = getNumberLabel(index);
+        if (!label) return; // Skip if no more labels available
+        
+        const siteIcon = item.querySelector('.site-icon');
+        if (!siteIcon) return;
+        
+        // Remove existing number overlay
+        const existingOverlay = siteIcon.querySelector('.keyboard-number-overlay');
+        if (existingOverlay) {
+            existingOverlay.remove();
+        }
+        
+        // Create number overlay
+        const overlay = document.createElement('div');
+        overlay.className = 'keyboard-number-overlay';
+        overlay.textContent = label;
+        overlay.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(102, 126, 234, 0.9);
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 20;
+            pointer-events: none;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        `;
+        siteIcon.style.position = 'relative';
+        siteIcon.appendChild(overlay);
+        
+        // Store mapping
+        numberMap.set(label.toLowerCase(), item);
+        
+        // Show down arrow if Control+Shift and site has children
+        if (showArrows) {
+            const siteId = item.getAttribute('data-id');
+            const hasChildren = sites.some(s => s.parentId === siteId);
+            if (hasChildren) {
+                const downArrow = item.querySelector('.down-arrow-icon');
+                if (downArrow) {
+                    downArrow.style.display = 'flex';
+                    downArrow.style.opacity = '1';
+                    downArrow.style.pointerEvents = 'auto';
+                }
+            }
+        } else {
+            // Hide arrows if showArrows is false
+            const downArrow = item.querySelector('.down-arrow-icon');
+            if (downArrow) {
+                const siteId = item.getAttribute('data-id');
+                const hasChildren = sites.some(s => s.parentId === siteId);
+                if (hasChildren) {
+                    downArrow.style.display = '';
+                    downArrow.style.opacity = '';
+                    downArrow.style.pointerEvents = '';
+                }
+            }
+        }
+        
+        index++;
+    });
+}
+
+// Hide number overlays
+function hideNumberOverlays(container) {
+    // Don't hide if Control is still pressed
+    if (isControlPressed) {
+        return;
+    }
+    
+    const overlays = container.querySelectorAll('.keyboard-number-overlay');
+    overlays.forEach(overlay => {
+        overlay.remove();
+    });
+    
+    // Hide down arrows
+    container.querySelectorAll('.down-arrow-icon').forEach(arrow => {
+        arrow.style.display = '';
+        arrow.style.opacity = '';
+        arrow.style.pointerEvents = '';
+    });
+}
+
+// Handle keyboard events
+if (isMacOS) {
+    document.addEventListener('keydown', async (e) => {
+        // Don't interfere with Escape key handling
+        if (e.key === 'Escape') {
+            return;
+        }
+        
+        const subLauncherModal = document.getElementById('subLauncherModal');
+        const sitesGrid = document.getElementById('sitesGrid');
+        const subLauncherGrid = document.getElementById('subLauncherGrid');
+        
+        // Check if sub-launcher is open and was opened via keyboard - handle number presses without Control
+        if (subLauncherModal && subLauncherModal.classList.contains('active') && keyboardShortcutMode) {
+            const key = e.key.toLowerCase();
+            // Check if it's a valid number (1-9) or letter (a-z) and NOT a modifier key
+            if (((key >= '1' && key <= '9') || (key >= 'a' && key <= 'z')) && !e.metaKey && !e.ctrlKey && !e.altKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const siteItem = subLauncherNumberMap.get(key);
+                if (siteItem) {
+                    const siteId = siteItem.getAttribute('data-id');
+                    const sites = await getSites();
+                    const site = sites.find(s => s.id === siteId);
+                    if (site) {
+                        await chrome.storage.session.set({ [`launcher_opened_${site.id}`]: true });
+                        window.location.href = site.url;
+                    }
+                }
+                return;
+            }
+        }
+        
+        // Check for Control key specifically (not Command/Meta on Mac)
+        // On macOS, we want the Control key, not the Command key (Meta)
+        if (e.ctrlKey && !e.metaKey) {
+            isControlPressed = true;
+            lastControlKeydownTime = Date.now();
+            
+            if (e.shiftKey) {
+                isShiftPressed = true;
+            } else {
+                // If Shift is not pressed, make sure we're not showing arrows
+                isShiftPressed = false;
+            }
+            
+            // Show number overlays on main page
+            if (sitesGrid && (!subLauncherModal || !subLauncherModal.classList.contains('active'))) {
+                const sites = await getSites();
+                const parentSites = sites.filter(site => !site.parentId);
+                if (parentSites.length > 0) {
+                    // Use e.shiftKey directly to determine if arrows should be shown
+                    await showNumberOverlays(sitesGrid, siteNumberMap, e.shiftKey);
+                }
+            }
+            
+            // Show number overlays in sub-launcher if opened via keyboard
+            if (subLauncherGrid && subLauncherModal && subLauncherModal.classList.contains('active') && keyboardShortcutMode) {
+                showNumberOverlays(subLauncherGrid, subLauncherNumberMap, false);
+            }
+        }
+        
+        // Handle number/letter key presses with Control (not Command/Meta)
+        if (e.ctrlKey && !e.metaKey && !e.altKey) {
+            const key = e.key.toLowerCase();
+            
+            // Check if it's a valid number (1-9) or letter (a-z)
+            if ((key >= '1' && key <= '9') || (key >= 'a' && key <= 'z')) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Check if we're in sub-launcher keyboard mode - if so, don't handle here (handled above)
+                const inSubLauncherKeyboardMode = subLauncherModal && subLauncherModal.classList.contains('active') && keyboardShortcutMode;
+                
+                if (!inSubLauncherKeyboardMode) {
+                    // Ensure number map is populated (in case overlays weren't shown yet)
+                    if (sitesGrid && siteNumberMap.size === 0) {
+                        const sites = await getSites();
+                        const parentSites = sites.filter(site => !site.parentId);
+                        if (parentSites.length > 0) {
+                            await showNumberOverlays(sitesGrid, siteNumberMap, isShiftPressed);
+                        }
+                    }
+                    
+                    // Handle main page number press
+                    const siteItem = siteNumberMap.get(key);
+                    if (siteItem) {
+                        const siteId = siteItem.getAttribute('data-id');
+                        const sites = await getSites();
+                        const site = sites.find(s => s.id === siteId);
+                        
+                        if (site) {
+                            if (isShiftPressed) {
+                                // Control+Shift+Number: Open sub-launcher if exists, otherwise open site
+                                const childSites = sites.filter(s => s.parentId === siteId);
+                                if (childSites.length > 0) {
+                                    keyboardShortcutMode = true;
+                                    await openSubLauncherModal(siteId);
+                                    // Show numbers in sub-launcher
+                                    requestAnimationFrame(() => {
+                                        const subLauncherGrid = document.getElementById('subLauncherGrid');
+                                        if (subLauncherGrid) {
+                                            showNumberOverlays(subLauncherGrid, subLauncherNumberMap, false);
+                                        }
+                                    });
+                                } else {
+                                    await chrome.storage.session.set({ [`launcher_opened_${site.id}`]: true });
+                                    window.location.href = site.url;
+                                }
+                            } else {
+                                // Control+Number: Open site
+                                await chrome.storage.session.set({ [`launcher_opened_${site.id}`]: true });
+                                window.location.href = site.url;
+                            }
+                        }
+                    }
+                    
+                    // Hide overlays after action
+                    if (sitesGrid) {
+                        hideNumberOverlays(sitesGrid);
+                    }
+                    isControlPressed = false;
+                    isShiftPressed = false;
+                }
+            }
+        }
+    });
+    
+    document.addEventListener('keyup', async (e) => {
+        const subLauncherModal = document.getElementById('subLauncherModal');
+        const sitesGrid = document.getElementById('sitesGrid');
+        const subLauncherGrid = document.getElementById('subLauncherGrid');
+        
+        // Only hide overlays when Control is actually released (not Command/Meta)
+        // Check the key name and verify the modifier is no longer pressed
+        if (e.key === 'Control' && !e.ctrlKey) {
+            // Check if enough time has passed since the last keydown to avoid false positives
+            const timeSinceKeydown = Date.now() - lastControlKeydownTime;
+            
+            // Only hide if at least 100ms has passed since keydown (to avoid immediate hiding)
+            if (timeSinceKeydown > 100) {
+                isControlPressed = false;
+                
+                // Use a delay to ensure this isn't a false positive from blur events
+                setTimeout(() => {
+                    // Double-check that Control is still not pressed
+                    if (!isControlPressed && !e.ctrlKey) {
+                        // Hide number overlays on main page
+                        if (sitesGrid) {
+                            hideNumberOverlays(sitesGrid);
+                        }
+                        // Hide overlays in sub-launcher only if NOT in keyboard shortcut mode
+                        if (subLauncherGrid && (!keyboardShortcutMode || !subLauncherModal || !subLauncherModal.classList.contains('active'))) {
+                            hideNumberOverlays(subLauncherGrid);
+                        }
+                    }
+                }, 100);
+            }
+        }
+        
+        if (e.key === 'Shift' && !e.shiftKey) {
+            isShiftPressed = false;
+            
+            // If Control is still pressed (check e.ctrlKey directly), re-show overlays without arrows
+            if (e.ctrlKey && !e.metaKey) {
+                // Update isControlPressed to true since Control is still held
+                isControlPressed = true;
+                const subLauncherModal = document.getElementById('subLauncherModal');
+                const sitesGrid = document.getElementById('sitesGrid');
+                
+                // Re-show number overlays without arrows
+                if (sitesGrid && (!subLauncherModal || !subLauncherModal.classList.contains('active'))) {
+                    const sites = await getSites();
+                    const parentSites = sites.filter(site => !site.parentId);
+                    if (parentSites.length > 0) {
+                        await showNumberOverlays(sitesGrid, siteNumberMap, false); // false = no arrows
+                    }
+                }
+            }
+        }
+    });
+}
+
+// Make body focusable for keyboard shortcuts (macOS)
+if (isMacOS) {
+    document.body.setAttribute('tabindex', '-1');
 }
 
 // Load theme and icon size, then initial render

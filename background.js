@@ -499,6 +499,16 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
                     continue; // Skip this script
                 }
                 
+                // Check if confirm popup is enabled
+                if (script.confirmPopup) {
+                    // Show confirm popup and wait for user response
+                    const scriptName = `Script for ${matchingSite.name}`;
+                    const confirmed = await showConfirmPopup(tabId, scriptName);
+                    if (!confirmed) {
+                        continue; // User cancelled, skip script execution
+                    }
+                }
+                
                 executeScriptWithTiming(tabId, script.code, script.timing);
             }
             
