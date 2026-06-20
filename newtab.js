@@ -1846,12 +1846,15 @@ importBtn.addEventListener('click', async () => {
             
             // Merge global scripts
             if (dataToImport.globalScripts && Array.isArray(dataToImport.globalScripts)) {
-                const currentScripts = await getGlobalScripts();
-                const existingNames = new Set(currentScripts.map(s => s.name));
-                const newScripts = dataToImport.globalScripts.filter(s => !existingNames.has(s.name));
-                if (newScripts.length > 0) {
-                    await chrome.storage.local.set({ globalScripts: [...currentScripts, ...newScripts] });
-                    message.push(`${newScripts.length} new global script(s) added`);
+                let addedCount = 0;
+                await updateGlobalScripts(currentScripts => {
+                    const existingNames = new Set(currentScripts.map(s => s.name));
+                    const toAdd = dataToImport.globalScripts.filter(s => !existingNames.has(s.name));
+                    addedCount = toAdd.length;
+                    return toAdd.length > 0 ? [...currentScripts, ...toAdd] : currentScripts;
+                });
+                if (addedCount > 0) {
+                    message.push(`${addedCount} new global script(s) added`);
                 }
             }
             
@@ -2214,16 +2217,53 @@ setupAdvancedModalListeners();
 // ==================== Global Scripts Management ====================
 
 let globalScriptCodeCounter = 0;
+let globalScriptsSaveQueue = Promise.resolve();
+
+function generateUniqueId() {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
+
+function dedupeGlobalScriptsById(scripts) {
+    const seen = new Set();
+    return scripts.filter(script => {
+        if (!script?.id) {
+            return true;
+        }
+        if (seen.has(script.id)) {
+            return false;
+        }
+        seen.add(script.id);
+        return true;
+    });
+}
 
 // Get global scripts from storage
 async function getGlobalScripts() {
     const result = await chrome.storage.local.get(['globalScripts']);
-    return result.globalScripts || [];
+    return dedupeGlobalScriptsById(result.globalScripts || []);
 }
 
-// Save global scripts to storage
+// Serialized read-modify-write to prevent concurrent saves from dropping scripts
+async function updateGlobalScripts(mutator) {
+    const run = async () => {
+        const result = await chrome.storage.local.get(['globalScripts']);
+        const scripts = dedupeGlobalScriptsById(result.globalScripts || []);
+        const updated = mutator(scripts);
+        await chrome.storage.local.set({ globalScripts: updated });
+        return updated;
+    };
+
+    const promise = globalScriptsSaveQueue.then(run, run);
+    globalScriptsSaveQueue = promise.catch(() => {});
+    return promise;
+}
+
+// Save global scripts to storage (replaces entire list)
 async function saveGlobalScripts(scripts) {
-    await chrome.storage.local.set({ globalScripts: scripts });
+    return updateGlobalScripts(() => dedupeGlobalScriptsById(scripts));
 }
 
 // Create a script code block item
@@ -2320,9 +2360,7 @@ async function renderGlobalScripts() {
         btn.addEventListener('click', async (e) => {
             const scriptId = btn.getAttribute('data-script-id');
             if (confirm('Are you sure you want to delete this global script?')) {
-                const scripts = await getGlobalScripts();
-                const filtered = scripts.filter(s => s.id !== scriptId);
-                await saveGlobalScripts(filtered);
+                await updateGlobalScripts(scripts => scripts.filter(s => s.id !== scriptId));
                 renderGlobalScripts();
             }
         });
@@ -2505,9 +2543,7 @@ function setupGlobalScriptsPage() {
             if (!scriptId) return;
             
             if (confirm('Are you sure you want to delete this global script?')) {
-                const scripts = await getGlobalScripts();
-                const filtered = scripts.filter(s => s.id !== scriptId);
-                await saveGlobalScripts(filtered);
+                await updateGlobalScripts(scripts => scripts.filter(s => s.id !== scriptId));
                 closeModal();
                 renderGlobalScripts();
             }
@@ -2576,43 +2612,49 @@ function setupGlobalScriptsPage() {
             return;
         }
         
-        const globalScripts = await getGlobalScripts();
-        
-        if (scriptId) {
-            // Update existing
-            const index = globalScripts.findIndex(s => s.id === scriptId);
-            if (index !== -1) {
-                const existingScript = globalScripts[index];
-                const updatedScript = {
-                    ...existingScript, // Preserve any existing properties
-                    id: scriptId,
-                    name,
-                    whenToRun,
-                    domainPattern,
-                    onRefresh: onRefresh || false,
-                    confirmPopup: confirmPopup || false,
-                    scripts
-                };
-                globalScripts[index] = updatedScript;
-            }
-        } else {
-            // Create new
-            const newScript = {
-                id: Date.now().toString(),
-                name,
-                whenToRun,
-                domainPattern,
-                onRefresh: onRefresh || false,
-                confirmPopup: confirmPopup || false,
-                scripts,
-                createdAt: Date.now()
-            };
-            globalScripts.push(newScript);
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.disabled = true;
+
+        try {
+            await updateGlobalScripts(globalScripts => {
+                if (scriptId) {
+                    const index = globalScripts.findIndex(s => s.id === scriptId);
+                    if (index !== -1) {
+                        const existingScript = globalScripts[index];
+                        globalScripts[index] = {
+                            ...existingScript,
+                            id: scriptId,
+                            name,
+                            whenToRun,
+                            domainPattern,
+                            onRefresh: onRefresh || false,
+                            confirmPopup: confirmPopup || false,
+                            scripts
+                        };
+                    }
+                } else {
+                    globalScripts.push({
+                        id: generateUniqueId(),
+                        name,
+                        whenToRun,
+                        domainPattern,
+                        onRefresh: onRefresh || false,
+                        confirmPopup: confirmPopup || false,
+                        scripts,
+                        createdAt: Date.now()
+                    });
+                }
+                return globalScripts;
+            });
+
+            closeModal();
+            renderGlobalScripts();
+        } catch (error) {
+            console.error('Failed to save global script:', error);
+            alert('Failed to save global script. Please try again.');
+        } finally {
+            if (submitBtn) submitBtn.disabled = false;
         }
-        
-        await saveGlobalScripts(globalScripts);
-        closeModal();
-        renderGlobalScripts();
         });
         form.dataset.submitListenerAttached = 'true';
     }
